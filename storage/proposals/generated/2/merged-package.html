@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ISET Package PDF</title>
+  <style>    :root {
+      --bg: #f6efe4;
+      --panel: #fffdfa;
+      --ink: #1d1915;
+      --muted: #6e665d;
+      --line: #d9ccb9;
+      --primary: #315845;
+      --accent: #b95a2f;
+      --card: #f5ede1;
+      --success: #21663a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top right, rgba(185, 90, 47, 0.10), transparent 24%),
+        linear-gradient(180deg, #faf5ee 0%, var(--bg) 100%);
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    a { color: var(--primary); }
+    .hero {
+      margin-bottom: 24px;
+      padding: 24px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 250, 0.92);
+      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    h1 {
+      margin: 8px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      letter-spacing: -0.04em;
+    }
+    p { line-height: 1.8; color: var(--muted); }
+    .nav {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .nav a {
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      text-decoration: none;
+      background: rgba(255,255,255,0.7);
+    }
+    .stack { display: grid; gap: 20px; }
+    .panel {
+      display: block;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
+    }
+    .panel-header {
+      padding: 22px 24px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(49, 88, 69, 0.05), rgba(255,255,255,0));
+    }
+    .panel-header h2 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    .panel-header p {
+      margin: 6px 0 0;
+      font-size: 1rem;
+    }
+    .accent-line {
+      height: 4px;
+      width: 92px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 999px;
+      margin-top: 14px;
+    }
+    .form-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      padding: 12px 24px;
+      font-size: 0.86rem;
+      color: var(--muted);
+      background: var(--card);
+      border-bottom: 1px solid var(--line);
+    }
+    .form-section {
+      margin: 18px 24px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffefd;
+    }
+    .form-section h3 {
+      margin: 0 0 14px;
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+    .form-section h4 {
+      margin: 18px 0 10px;
+      font-size: 1rem;
+      color: var(--ink);
+    }
+    .field-group {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .field-group.cols-1 { grid-template-columns: 1fr; }
+    .field-group.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .field-group.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .field.full { grid-column: 1 / -1; }
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .value-box, .text-box {
+      min-height: 40px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .text-box { min-height: 94px; }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(49, 88, 69, 0.09);
+      border: 1px solid rgba(49, 88, 69, 0.12);
+      color: var(--primary);
+      font-size: 0.85rem;
+    }
+    .form-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .form-table th,
+    .form-table td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .form-table th {
+      background: var(--card);
+      font-size: 0.84rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .info-box {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border: 1px solid rgba(49, 88, 69, 0.16);
+      border-radius: 12px;
+      background: rgba(49, 88, 69, 0.05);
+      line-height: 1.7;
+    }
+    .consent-text {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      line-height: 1.75;
+    }
+    .print-footer {
+      display: block;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      padding: 10px 24px 16px;
+      margin-top: 20px;
+    }
+    .package-cover {
+      padding: 40px 32px;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+      text-align: left;
+    }
+    .package-cover h2 {
+      margin: 0;
+      font-size: 2.5rem;
+      letter-spacing: -0.05em;
+    }
+    .cover-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .cover-grid .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      background: rgba(255,255,255,0.75);
+    }
+    .cover-grid strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--primary);
+    }
+    @media (max-width: 860px) {
+      .field-group,
+      .field-group.cols-3,
+      .field-group.cols-4,
+      .cover-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media print {
+      body { background: #fff; font-size: 10pt; }
+      .hero, .nav { display: none !important; }
+      main { max-width: 100%; padding: 0; margin: 0; }
+      .stack { gap: 0; }
+      .panel { box-shadow: none; border-radius: 0; border: none; page-break-before: always; }
+      .panel:first-of-type { page-break-before: auto; }
+      .form-section { page-break-inside: avoid; }
+      .print-footer { margin-top: 24px; }
+    }</style>
+</head>
+<body>
+  <main>
+    <div class="stack"><section class="panel"><div class="package-cover"><div class="eyebrow">Waaseyaa Proposals</div><h2>ISET Self-Employment Assistance Package</h2><p>This package is rendered from canonical proposal state stored in Waaseyaa and seeded from the latest NorthOps application artifacts in ~/NorthOps.</p><div class="cover-grid"><div class="card"><strong>Submission</strong>Jane Goodowl — Mino-Awiiyaas Catering (Demo)</div><div class="card"><strong>Status</strong>intake_in_progress</div><div class="card"><strong>Started</strong>2026-04-10T00:00:00+00:00</div><div class="card"><strong>Applicant</strong>Jane Goodowl</div><div class="card"><strong>Business</strong>Mino-Awiiyaas Catering</div><div class="card"><strong>Appendices Included</strong>5 of 6</div></div></div><div class="print-footer">Education Department, 717 Sagamok Road, Sagamok ON P0P 2L0, Telephone: (705) 865-2421</div></section><section class="panel"><div class="panel-header"><h2>Step 1: Client Data Form</h2><p>Appendix A — ISETP-001</p><div class="accent-line"></div></div><div class="form-meta"><span><strong>Form #:</strong> ISETP-001</span><span><strong>Policy Ref:</strong> ISETP Policy 5.4</span><span><strong>Date Reviewed:</strong> 2024-04-01</span><span><strong>Pages:</strong> 4</span></div><div class="form-section"><h3>Client Information</h3><div class="field-group"><div class="field"><label>SIN</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Full Legal Name</label><div class="value-box">Jane Goodowl</div></div></div><div class="field-group cols-1"><div class="field"><label>Marital Status</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Number of Dependents</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Ages of Dependents</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Birth Date</label><div class="value-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Gender</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Disability</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Aboriginal Group</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Band #</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Band / Community</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Preferred Language</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Second Language</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Residence</label><div class="value-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Contact Information</h3><div class="field-group"><div class="field"><label>PO Box</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Street</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Town</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Province</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Postal Code</label><div class="value-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Telephone</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Email</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Emergency Contact</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Relationship</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Emergency Telephone</label><div class="value-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Education and Training</h3><div class="field-group cols-3"><div class="field"><label>Elementary Completed</label><div class="value-box">&nbsp;</div></div><div class="field"><label>High School Completed</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Highest Grade</label><div class="value-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Year Completed</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Licences / Certificates</label><div class="text-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Employment and Income</h3><div class="field-group cols-3"><div class="field"><label>Employment Status</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Last Employer</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Job Title</label><div class="value-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Employed From</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Employed To</label><div class="value-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Income Sources</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Leaving Reasons</label><div class="text-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Barriers</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Other Barrier Notes</label><div class="text-box">&nbsp;</div></div></div></div><div class="print-footer">Education Department, 717 Sagamok Road, Sagamok ON P0P 2L0, Telephone: (705) 865-2421</div></section><section class="panel"><div class="panel-header"><h2>Step 2: Consent Form</h2><p>Appendix B — ISETP-002</p><div class="accent-line"></div></div><div class="form-meta"><span><strong>Form #:</strong> ISETP-002</span><span><strong>Policy Ref:</strong> ISETP Policy 5.4</span><span><strong>Date Reviewed:</strong> 2024-04-01</span><span><strong>Pages:</strong> 1</span></div><div class="form-section"><h3>Consent to Collect, Use and Disclose Personal Information</h3><div class="consent-text">I hereby consent to the collection, use and disclosure of my personal information by the Indigenous Skills and Employment Training (ISET) Program holder and/or its agents for the purpose of determining my eligibility for, and administering, employment and training programs and services.<br />
+<br />
+I understand that my personal information may be shared with federal and provincial government departments and agencies, educational institutions, employers and other third parties for the purposes of determining eligibility, delivering services, monitoring outcomes, research and statistical purposes, and administering the program.<br />
+<br />
+I understand that this consent is voluntary and may be withdrawn in writing, and that withdrawal may affect eligibility for employment and training supports.</div><div class="field-group cols-3"><div class="field"><label>Day</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Month</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Year</label><div class="value-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Print Full Name</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Signature</label><div class="value-box">&nbsp;</div></div></div><h4>Parent / Guardian (for participants 15 and under)</h4><div class="field-group"><div class="field"><label>Parent / Guardian Name</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Parent / Guardian Signature</label><div class="value-box">&nbsp;</div></div></div><h4>Witness</h4><div class="field-group"><div class="field"><label>Witness Full Name</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Witness Signature</label><div class="value-box">&nbsp;</div></div></div><div class="info-box"><strong>Privacy Act Notice</strong><br>The personal information collected on this form is used for the administration of the Indigenous Skills and Employment Training Program and is handled in accordance with applicable privacy legislation.</div></div><div class="print-footer">Education Department, 717 Sagamok Road, Sagamok ON P0P 2L0, Telephone: (705) 865-2421</div></section><section class="panel"><div class="panel-header"><h2>Step 3: Request for Funding</h2><p>Appendix F — ISETP-006</p><div class="accent-line"></div></div><div class="form-meta"><span><strong>Form #:</strong> ISETP-006</span><span><strong>Policy Ref:</strong> ISETP Policy 5.4</span><span><strong>Date Reviewed:</strong> 2024-04-01</span><span><strong>Pages:</strong> 2</span></div><div class="form-section"><h3>Applicant Information</h3><div class="field-group cols-3"><div class="field"><label>Full Legal Name</label><div class="value-box">Jane Goodowl</div></div><div class="field"><label>Telephone</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Email</label><div class="value-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Activity Type</h3><div class="field-group"><div class="field"><label>Selected Activity</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Job Opportunity Reasons</label><div class="text-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Preferred Employer / Institution</h3><div class="field-group"><div class="field"><label>Preferred Employer / Institution 1</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Preferred Employer / Institution 2</label><div class="value-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Desired Time Frame — From</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Desired Time Frame — To</label><div class="value-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Career Goals &amp; Training Plan</h3><div class="field-group cols-1"><div class="field"><label>Overall Career Goals</label><div class="text-box">&nbsp;</div></div></div><div class="field-group cols-1"><div class="field"><label>How does this activity support your career goals?</label><div class="text-box">To: Economic Development Office<br />
+    Re: Request for Small Business Grant — mobile catering pilot</div></div></div><div class="field-group cols-1"><div class="field"><label>Following this program, do you intend to</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-1"><div class="field"><label>Three-Year Training Plan</label><div class="text-box">&nbsp;</div></div></div><h4>Certified Training Required</h4><div class="field-group cols-3"><div class="field"><label>1</label><div class="value-box">&nbsp;</div></div><div class="field"><label>2</label><div class="value-box">&nbsp;</div></div><div class="field"><label>3</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>4</label><div class="value-box">&nbsp;</div></div><div class="field"><label>5</label><div class="value-box">&nbsp;</div></div><div class="field"><label>6</label><div class="value-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Certification</h3><div class="field-group"><div class="field"><label>Signature</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Date</label><div class="value-box">&nbsp;</div></div></div></div><div class="print-footer">Education Department, 717 Sagamok Road, Sagamok ON P0P 2L0, Telephone: (705) 865-2421</div></section><section class="panel"><div class="panel-header"><h2>Step 4: Career Action Plan</h2><p>Appendix G — ISETP-007</p><div class="accent-line"></div></div><div class="form-meta"><span><strong>Form #:</strong> ISETP-007</span><span><strong>Policy Ref:</strong> ISETP Policy 5.4</span><span><strong>Date Reviewed:</strong> 2024-04-01</span><span><strong>Pages:</strong> 9</span></div><div class="form-section"><h3>Career Goal</h3><div class="info-box">The Career Action Plan assists in exploring career options, identifying skills and training needs, and building a clear path to employment or self-employment.</div><div class="field-group cols-1"><div class="field"><label>Career Goal</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-1"><div class="field"><label>Why this occupation or path?</label><div class="text-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Job Market Research</h3><table class="form-table"><thead><tr><th>#</th><th>Position</th><th>Employers / Market</th><th>Responsibilities</th><th>Compensation</th><th>Location</th></tr></thead><tbody></tbody></table></div><div class="form-section"><h3>Education, Skills, and Work Gap Analysis</h3><div class="field-group"><div class="field"><label>Education / Training — Have</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Education / Training — Need</label><div class="text-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Licences / Certificates — Have</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Licences / Certificates — Need</label><div class="text-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Skills — Have</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Skills — Need</label><div class="text-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Work Experience — Have</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Work Experience — Need</label><div class="text-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Institution Research</h3><h4>Preferred Institution</h4><div class="field-group"><div class="field"><label>Institution</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Course</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Delivery</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Length</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Address</label><div class="value-box">&nbsp;</div></div></div><h4>Alternate Institution</h4><div class="field-group"><div class="field"><label>Institution</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Course</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Delivery</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Length</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Address</label><div class="value-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Financial Impact and Three-Year Plan</h3><div class="field-group"><div class="field"><label>Tuition / Books / Travel Notes</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Living Expense Notes</label><div class="text-box">&nbsp;</div></div></div><div class="field-group cols-1"><div class="field"><label>Three-Year Plan</label><div class="text-box">&nbsp;</div></div></div></div><div class="print-footer">Education Department, 717 Sagamok Road, Sagamok ON P0P 2L0, Telephone: (705) 865-2421</div></section><section class="panel"><div class="panel-header"><h2>Step 5: Authorization of Release</h2><p>Appendix H — ISETP-008</p><div class="accent-line"></div></div><div class="form-meta"><span><strong>Form #:</strong> ISETP-008</span><span><strong>Policy Ref:</strong> ISETP Policy 5.4</span><span><strong>Date Reviewed:</strong> 2024-04-01</span><span><strong>Pages:</strong> 1</span></div><div class="form-section"><h3>Authorization to Release Academic Information</h3><p>I hereby authorize the academic institution named below to release my academic records, including grades, transcripts, attendance records, and enrollment status, to the ISET Program holder for the purpose of monitoring my progress in the funded training or educational program.</p><div class="field-group cols-1"><div class="field"><label>Academic Institution Name</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Student Name (Print)</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Academic Year — From</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Academic Year — To</label><div class="value-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Signature</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Date</label><div class="value-box">&nbsp;</div></div></div></div><div class="print-footer">Education Department, 717 Sagamok Road, Sagamok ON P0P 2L0, Telephone: (705) 865-2421</div></section><section class="panel"><div class="panel-header"><h2>Step 6: Business Proposal Summary</h2><p>Appendix M — ISETP-013</p><div class="accent-line"></div></div><div class="form-meta"><span><strong>Form #:</strong> ISETP-013</span><span><strong>Policy Ref:</strong> ISETP Policy 5.4</span><span><strong>Date Reviewed:</strong> 2024-04-01</span><span><strong>Pages:</strong> 2</span></div><div class="form-section"><h3>Business Information</h3><div class="field-group"><div class="field"><label>Legal Name of Applicant</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Registered Name of Business</label><div class="value-box">Mino-Awiiyaas Catering</div></div></div><div class="field-group"><div class="field"><label>Business Address</label><div class="value-box">&nbsp;</div></div><div class="field"><label>City / Town</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Province</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Postal Code</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Telephone</label><div class="value-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Proposed Business Location</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Form of Business Ownership</label><div class="value-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Signing Officers / Shareholders</h3><table class="form-table"><thead><tr><th>#</th><th>Print Name</th><th>Signature</th></tr></thead><tbody><tr><td>1</td><td></td><td></td></tr><tr><td>2</td><td></td><td></td></tr><tr><td>3</td><td></td><td></td></tr><tr><td>4</td><td></td><td></td></tr></tbody></table></div><div class="form-section"><h3>Classification of Business</h3><div class="field-group"><div class="field"><label>Classification</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Other / Additional Notes</label><div class="value-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Business Status &amp; Operations</h3><div class="field-group"><div class="field"><label>Business Status</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Registration Date</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Applicant Involvement</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Hours of Operation</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Weekly Hours</label><div class="value-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Objectives</h3><div class="field-group cols-1"><div class="field"><label>Business Objectives</label><div class="text-box">Community-event catering &amp; weekday lunch pop-ups — sole proprietorship — illustrative business plan excerpt</div></div></div></div><div class="form-section"><h3>Operating Requirements</h3><div class="field-group cols-1"><div class="field"><label>Government Regulations / Permits / Licences Required</label><div class="text-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Obtained?</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Anticipated Date of Obtaining</label><div class="value-box">Within 10 days of SEA approval</div></div></div></div><div class="form-section"><h3>Financials</h3><div class="field-group cols-1"><div class="field"><label>Total Startup Cost ($)</label><div class="value-box">&nbsp;</div></div></div><table class="form-table"><thead><tr><th>Source</th><th>Amount ($)</th></tr></thead><tbody><tr><td>Client Cash Equity</td><td></td></tr><tr><td>Loan 1</td><td></td></tr><tr><td>Loan 2</td><td></td></tr><tr><td>Grant 1</td><td></td></tr><tr><td>Grant 2</td><td></td></tr><tr><td>Total</td><td></td></tr></tbody></table><div class="field-group cols-1"><div class="field"><label>Funding Source Keys Captured</label><div class="text-box">&nbsp;</div></div></div></div><div class="print-footer">Education Department, 717 Sagamok Road, Sagamok ON P0P 2L0, Telephone: (705) 865-2421</div></section></div>
+  </main>
+</body>
+</html>

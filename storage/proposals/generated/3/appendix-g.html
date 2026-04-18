@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>APPENDIX_G</title>
+  <style>    :root {
+      --bg: #f6efe4;
+      --panel: #fffdfa;
+      --ink: #1d1915;
+      --muted: #6e665d;
+      --line: #d9ccb9;
+      --primary: #315845;
+      --accent: #b95a2f;
+      --card: #f5ede1;
+      --success: #21663a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top right, rgba(185, 90, 47, 0.10), transparent 24%),
+        linear-gradient(180deg, #faf5ee 0%, var(--bg) 100%);
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    a { color: var(--primary); }
+    .hero {
+      margin-bottom: 24px;
+      padding: 24px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 250, 0.92);
+      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    h1 {
+      margin: 8px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      letter-spacing: -0.04em;
+    }
+    p { line-height: 1.8; color: var(--muted); }
+    .nav {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .nav a {
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      text-decoration: none;
+      background: rgba(255,255,255,0.7);
+    }
+    .stack { display: grid; gap: 20px; }
+    .panel {
+      display: block;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
+    }
+    .panel-header {
+      padding: 22px 24px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(49, 88, 69, 0.05), rgba(255,255,255,0));
+    }
+    .panel-header h2 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    .panel-header p {
+      margin: 6px 0 0;
+      font-size: 1rem;
+    }
+    .accent-line {
+      height: 4px;
+      width: 92px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 999px;
+      margin-top: 14px;
+    }
+    .form-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      padding: 12px 24px;
+      font-size: 0.86rem;
+      color: var(--muted);
+      background: var(--card);
+      border-bottom: 1px solid var(--line);
+    }
+    .form-section {
+      margin: 18px 24px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffefd;
+    }
+    .form-section h3 {
+      margin: 0 0 14px;
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+    .form-section h4 {
+      margin: 18px 0 10px;
+      font-size: 1rem;
+      color: var(--ink);
+    }
+    .field-group {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .field-group.cols-1 { grid-template-columns: 1fr; }
+    .field-group.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .field-group.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .field.full { grid-column: 1 / -1; }
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .value-box, .text-box {
+      min-height: 40px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .text-box { min-height: 94px; }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(49, 88, 69, 0.09);
+      border: 1px solid rgba(49, 88, 69, 0.12);
+      color: var(--primary);
+      font-size: 0.85rem;
+    }
+    .form-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .form-table th,
+    .form-table td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .form-table th {
+      background: var(--card);
+      font-size: 0.84rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .info-box {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border: 1px solid rgba(49, 88, 69, 0.16);
+      border-radius: 12px;
+      background: rgba(49, 88, 69, 0.05);
+      line-height: 1.7;
+    }
+    .consent-text {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      line-height: 1.75;
+    }
+    .print-footer {
+      display: block;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      padding: 10px 24px 16px;
+      margin-top: 20px;
+    }
+    .package-cover {
+      padding: 40px 32px;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+      text-align: left;
+    }
+    .package-cover h2 {
+      margin: 0;
+      font-size: 2.5rem;
+      letter-spacing: -0.05em;
+    }
+    .cover-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .cover-grid .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      background: rgba(255,255,255,0.75);
+    }
+    .cover-grid strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--primary);
+    }
+    @media (max-width: 860px) {
+      .field-group,
+      .field-group.cols-3,
+      .field-group.cols-4,
+      .cover-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media print {
+      body { background: #fff; font-size: 10pt; }
+      .hero, .nav { display: none !important; }
+      main { max-width: 100%; padding: 0; margin: 0; }
+      .stack { gap: 0; }
+      .panel { box-shadow: none; border-radius: 0; border: none; page-break-before: always; }
+      .panel:first-of-type { page-break-before: auto; }
+      .form-section { page-break-inside: avoid; }
+      .print-footer { margin-top: 24px; }
+    }</style>
+</head>
+<body>
+  <main>
+    <div class="stack"><section class="panel"><div class="panel-header"><h2>Step 4: Career Action Plan</h2><p>Appendix G — ISETP-007</p><div class="accent-line"></div></div><div class="form-meta"><span><strong>Form #:</strong> ISETP-007</span><span><strong>Policy Ref:</strong> ISETP Policy 5.4</span><span><strong>Date Reviewed:</strong> 2024-04-01</span><span><strong>Pages:</strong> 9</span></div><div class="form-section"><h3>Career Goal</h3><div class="info-box">The Career Action Plan assists in exploring career options, identifying skills and training needs, and building a clear path to employment or self-employment.</div><div class="field-group cols-1"><div class="field"><label>Career Goal</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-1"><div class="field"><label>Why this occupation or path?</label><div class="text-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Job Market Research</h3><table class="form-table"><thead><tr><th>#</th><th>Position</th><th>Employers / Market</th><th>Responsibilities</th><th>Compensation</th><th>Location</th></tr></thead><tbody></tbody></table></div><div class="form-section"><h3>Education, Skills, and Work Gap Analysis</h3><div class="field-group"><div class="field"><label>Education / Training — Have</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Education / Training — Need</label><div class="text-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Licences / Certificates — Have</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Licences / Certificates — Need</label><div class="text-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Skills — Have</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Skills — Need</label><div class="text-box">&nbsp;</div></div></div><div class="field-group"><div class="field"><label>Work Experience — Have</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Work Experience — Need</label><div class="text-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Institution Research</h3><h4>Preferred Institution</h4><div class="field-group"><div class="field"><label>Institution</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Course</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Delivery</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Length</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Address</label><div class="value-box">&nbsp;</div></div></div><h4>Alternate Institution</h4><div class="field-group"><div class="field"><label>Institution</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Course</label><div class="value-box">&nbsp;</div></div></div><div class="field-group cols-3"><div class="field"><label>Delivery</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Length</label><div class="value-box">&nbsp;</div></div><div class="field"><label>Address</label><div class="value-box">&nbsp;</div></div></div></div><div class="form-section"><h3>Financial Impact and Three-Year Plan</h3><div class="field-group"><div class="field"><label>Tuition / Books / Travel Notes</label><div class="text-box">&nbsp;</div></div><div class="field"><label>Living Expense Notes</label><div class="text-box">&nbsp;</div></div></div><div class="field-group cols-1"><div class="field"><label>Three-Year Plan</label><div class="text-box">I want to serve Band administration offices and local families, but I still need help validating the local market and expected demand for a home support meal service</div></div></div></div><div class="print-footer">Education Department, 717 Sagamok Road, Sagamok ON P0P 2L0, Telephone: (705) 865-2421</div></section></div>
+  </main>
+</body>
+</html>
