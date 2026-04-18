@@ -4,20 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-<!-- Replace with your app description -->
-A Waaseyaa application built on the [Waaseyaa framework](https://github.com/waaseyaa/framework).
+Schema-first proposal and funding pipeline application built on the [Waaseyaa framework](https://github.com/waaseyaa/framework) for the Waaseyaa platform and NorthOps. Entity types cover pipelines, submissions, documents, reviews, and cohorts. `waaseyaa/bimaaji` is wired in for app graph introspection; the root dashboard exposes the graph snapshot plus sovereignty context, and `/submissions` is the first live domain route.
 
 ## Architecture
 
 ```
 src/
 ├── Access/        Authorization policies
+├── Command/       CLI commands (registered via providers)
 ├── Controller/    HTTP controllers (thin orchestration)
 ├── Domain/        Domain logic grouped by bounded context
 ├── Entity/        Entity classes (extend ContentEntityBase)
+├── Ingestion/     Inbound data pipelines (files, email, APIs)
 ├── Provider/      Service providers (DI, routing, entity registration)
-└── Support/       Cross-cutting utilities
+├── Search/        Search providers, autocomplete, indexing
+├── Seed/          Seeders for dev/local bootstrap
+└── Support/       Cross-cutting utilities (ValueObjects, helpers)
 ```
+
+**Domain/** — bounded contexts live under `Domain/<ContextName>/` with optional `Service/`, `ValueObject/`, `Workflow/`, `Assembler/`, `Ranker/`, `Mapper/` subdirectories.
 
 ### Key Patterns
 
@@ -125,14 +130,22 @@ Register Waaseyaa's MCP server in `.claude/settings.json` for on-demand framewor
 ## Development
 
 ```bash
-composer install                    # Install dependencies
-php -S localhost:8080 -t public     # Dev server
-./vendor/bin/phpunit                # Run tests
-bin/waaseyaa                        # CLI
-bin/waaseyaa-version                # Framework provenance (path SHA, lockfile, drift vs golden)
-bin/waaseyaa-audit-site             # Mechanical convergence preflight (validate + bins + provenance)
-bin/waaseyaa sync-rules             # Update framework rules from Waaseyaa
+composer install                       # Install dependencies
+bin/waaseyaa serve                     # Dev server (preferred over raw php -S)
+./vendor/bin/phpunit                   # Run full test suite
+./vendor/bin/phpunit --filter TestName # Run a single test by name
+bin/waaseyaa                           # CLI entry point
+php bin/waaseyaa optimize:manifest     # Rebuild provider manifest after adding/removing providers
+bin/waaseyaa-version                   # Framework provenance (path SHA, lockfile, drift vs golden)
+bin/waaseyaa-audit-site                # Mechanical convergence preflight (validate + bins + provenance)
+bin/waaseyaa sync-rules                # Update framework rules from Waaseyaa
 ```
+
+**Config files:**
+- `config/waaseyaa.php` — framework config
+- `config/entity-types.php` — custom entity type registrations
+- `config/services.php` — service overrides
+- `composer.local.json` — local path repositories for `../waaseyaa/packages/*` during framework co-development
 
 Set `WAASEYAA_GOLDEN_SHA` or add `.waaseyaa-golden-sha` for CI drift gates (see `docs/specs/version-provenance.md` in the framework repo).
 
