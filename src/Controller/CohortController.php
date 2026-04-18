@@ -33,7 +33,7 @@ final class CohortController
         }
 
         if ($cards === '') {
-            $cards = '<div class="empty">No cohorts exist yet. Run <code>php bin/waaseyaa proposals:seed-northops</code> to seed the pilot cohort.</div>';
+            $cards = '<div class="empty">No cohorts exist yet. Run <code>php bin/waaseyaa northops:seed</code> to seed the pilot cohort.</div>';
         }
 
         $html = <<<'HTML'
@@ -42,7 +42,7 @@ final class CohortController
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cohorts · Waaseyaa Proposals</title>
+  <title>Cohorts · Miikana</title>
   <style>
     :root {
       --ink: #171411;
@@ -177,7 +177,7 @@ HTML;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cohort Detail · Waaseyaa Proposals</title>
+  <title>Cohort Detail · Miikana</title>
   <style>
     :root {
       --ink: #171411;

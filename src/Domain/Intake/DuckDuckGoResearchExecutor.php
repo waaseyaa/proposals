@@ -96,7 +96,7 @@ final class DuckDuckGoResearchExecutor implements ResearchExecutorInterface
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/x-www-form-urlencoded',
-                'User-Agent: WaaseyaaProposalsResearchBot/1.0',
+                'User-Agent: MiikanaResearchBot/1.0',
             ],
         ]);
 
@@ -224,7 +224,7 @@ final class DuckDuckGoResearchExecutor implements ResearchExecutorInterface
             CURLOPT_TIMEOUT => 20,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTPHEADER => [
-                'User-Agent: WaaseyaaProposalsResearchBot/1.0 (research loop)',
+                'User-Agent: MiikanaResearchBot/1.0 (research loop)',
             ],
         ]);
 

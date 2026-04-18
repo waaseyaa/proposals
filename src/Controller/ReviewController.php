@@ -68,7 +68,7 @@ final class ReviewController
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Review · Waaseyaa Proposals</title>
+  <title>Review · Miikana</title>
   <style>
     :root {
       --ink: #171411;

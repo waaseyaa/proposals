@@ -37,7 +37,7 @@ final class SubmissionController
             $items = <<<'HTML'
 <div class="empty">
   <p>No proposal submissions are stored yet.</p>
-  <p>Run <code>php bin/waaseyaa proposals:seed-northops</code> to import the latest package from <code>~/NorthOps</code>.</p>
+  <p>Run <code>php bin/waaseyaa northops:seed</code> to import the latest package from <code>~/NorthOps</code>.</p>
 </div>
 HTML;
         }
@@ -48,7 +48,7 @@ HTML;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Submissions · Waaseyaa Proposals</title>
+  <title>Submissions · Miikana</title>
   <style>
     :root {
       --ink: #171411;
@@ -240,7 +240,7 @@ HTML;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Submission Detail · Waaseyaa Proposals</title>
+  <title>Submission Detail · Miikana</title>
   <style>
     :root {
       --ink: #171411;

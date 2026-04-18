@@ -130,7 +130,7 @@ final class NorthOpsSeedImporter
         $submission->set('confidence_state', $confidenceState);
 
         $submission->set('unresolved_items', is_array($existingUnresolvedItems) ? $existingUnresolvedItems : []);
-        $submission->set('conversation_summary', 'Seeded from the latest NorthOps ISET package in ~/NorthOps for Waaseyaa proposal development.');
+        $submission->set('conversation_summary', 'Seeded from the latest NorthOps ISET package in ~/NorthOps for Miikana development.');
         $submission->set('intake_transcript', [
             [
                 'role' => 'system',

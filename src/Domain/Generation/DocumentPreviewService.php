@@ -897,7 +897,7 @@ CSS;
             : 0;
 
         return sprintf(
-            '<section class="panel"><div class="package-cover"><div class="eyebrow">Waaseyaa Proposals</div><h2>ISET Self-Employment Assistance Package</h2><p>This package is rendered from canonical proposal state stored in Waaseyaa and seeded from the latest NorthOps application artifacts in ~/NorthOps.</p><div class="cover-grid"><div class="card"><strong>Submission</strong>%s</div><div class="card"><strong>Status</strong>%s</div><div class="card"><strong>Started</strong>%s</div><div class="card"><strong>Applicant</strong>%s</div><div class="card"><strong>Business</strong>%s</div><div class="card"><strong>Appendices Included</strong>%d of 6</div></div></div><div class="print-footer">%s</div></section>',
+            '<section class="panel"><div class="package-cover"><div class="eyebrow">Miikana</div><h2>ISET Self-Employment Assistance Package</h2><p>This package is rendered from canonical proposal state stored in Waaseyaa and seeded from the latest NorthOps application artifacts in ~/NorthOps.</p><div class="cover-grid"><div class="card"><strong>Submission</strong>%s</div><div class="card"><strong>Status</strong>%s</div><div class="card"><strong>Started</strong>%s</div><div class="card"><strong>Applicant</strong>%s</div><div class="card"><strong>Business</strong>%s</div><div class="card"><strong>Appendices Included</strong>%d of 6</div></div></div><div class="print-footer">%s</div></section>',
             $this->escape((string) ($submission->label() ?? '')),
             $this->escape((string) ($submission->get('status') ?? '')),
             $this->escape($startedAt),

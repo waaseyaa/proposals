@@ -1,6 +1,6 @@
 {
-    "name": "northops/waaseyaa-proposals",
-    "description": "Waaseyaa Proposals App for schema-first funding and proposal pipelines",
+    "name": "waaseyaa/miikana",
+    "description": "Miikana — schema-first proposal and funding pipeline app on the Waaseyaa framework",
     "type": "project",
     "license": "GPL-2.0-or-later",
     "require": {

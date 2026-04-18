@@ -48,7 +48,7 @@ final class DocumentController
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Document Previews · Waaseyaa Proposals</title>
+  <title>Document Previews · Miikana</title>
   <style>__STYLES__</style>
 </head>
 <body>
@@ -96,7 +96,7 @@ HTML;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Merged Package · Waaseyaa Proposals</title>
+  <title>Merged Package · Miikana</title>
   <style>__STYLES__</style>
 </head>
 <body>
@@ -294,7 +294,7 @@ HTML;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Exports · Waaseyaa Proposals</title>
+  <title>Exports · Miikana</title>
   <style>
     :root {
       --ink: #171411;

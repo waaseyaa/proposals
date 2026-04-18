@@ -1,4 +1,4 @@
-# Waaseyaa Proposals
+# Miikana
 
 Schema-first proposal and funding pipeline application built on Waaseyaa for the
 Waaseyaa platform and NorthOps.

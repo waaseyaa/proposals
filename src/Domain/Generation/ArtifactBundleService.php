@@ -78,7 +78,7 @@ final class ArtifactBundleService
         $zip->addFromString('bundle-manifest.json', (string) json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
         $readmeLines = [
-            'Waaseyaa Proposals Artifact Bundle',
+            'Miikana Artifact Bundle',
             'Submission: ' . (string) ($submission->label() ?? ''),
             'Status: ' . $status,
             'Generated: ' . $generatedAt,

@@ -54,7 +54,7 @@ final class IntakeController
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Intake · Waaseyaa Proposals</title>
+  <title>Intake · Miikana</title>
   <style>
     :root {
       --ink: #171411;

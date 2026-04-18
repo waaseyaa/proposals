@@ -13,8 +13,8 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'proposals:seed-northops',
-    description: 'Seed the Waaseyaa Proposals app with the latest NorthOps ISET package.',
+    name: 'northops:seed',
+    description: 'Seed Miikana with the latest NorthOps ISET package.',
 )]
 final class SeedNorthOpsCommand extends Command
 {

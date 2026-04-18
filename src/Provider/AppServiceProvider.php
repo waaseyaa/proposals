@@ -150,10 +150,15 @@ final class AppServiceProvider extends ServiceProvider
 
     public function routes(WaaseyaaRouter $router, ?\Waaseyaa\Entity\EntityTypeManager $entityTypeManager = null): void
     {
+        $twig = \Waaseyaa\SSR\SsrServiceProvider::getTwigEnvironment();
+        if ($twig === null) {
+            throw new \RuntimeException('Twig environment not available; SsrServiceProvider::boot() must run before routes are registered.');
+        }
         $dashboard = new DashboardController(
             $this->resolve(ApplicationGraphGenerator::class),
             $this->resolve(EntityTypeManagerInterface::class),
             $this->resolve(CohortOverviewService::class),
+            $twig,
         );
         $submissions = new SubmissionController(
             $this->resolve(EntityTypeManagerInterface::class),
