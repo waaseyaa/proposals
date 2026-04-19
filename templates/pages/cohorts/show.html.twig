@@ -1,0 +1,154 @@
+{% extends "layouts/base.html.twig" %}
+{% block title %}{{ trans('cohorts.show.page.title') }}{% endblock %}
+{% block head %}  <style>
+    :root {
+      --ink: #171411;
+      --paper: #fffdfa;
+      --line: #dbccb8;
+      --moss: #315845;
+      --rust: #ba5a2d;
+      --muted: #6f665c;
+      --card: #f7efe3;
+    }
+    body {
+      margin: 0;
+      font-family: Georgia, serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f8f3eb 0%, #efe5d8 100%);
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+    a { color: var(--moss); }
+    .hero, .card {
+      background: rgba(255, 253, 250, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
+    }
+    .hero { margin-bottom: 24px; }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      color: var(--rust);
+      font-weight: 700;
+    }
+    h1 {
+      margin: 8px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      letter-spacing: -0.04em;
+    }
+    p { line-height: 1.8; color: var(--muted); }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .metric {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .metric strong {
+      display: block;
+      font-size: 1.45rem;
+      color: var(--moss);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 12px 10px;
+      border-top: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      background: var(--card);
+    }
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .links a {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #fff;
+      text-decoration: none;
+      font-size: 0.88rem;
+    }
+    @media (max-width: 960px) {
+      .metrics { grid-template-columns: 1fr 1fr; }
+      table, thead, tbody, tr, th, td { display: block; }
+      thead { display: none; }
+    }
+  </style>
+{% endblock %}
+{% block body %}  <main>
+    <section class="hero">
+      <div class="eyebrow">Cohort Detail</div>
+      <h1>{{ cohort.title }}</h1>
+      <p>This board gives staff one place to monitor proposal progress, weak-field risk, appendix review completion, and export readiness across the cohort.</p>
+      <p><a href="/cohorts">All cohorts</a> · <a href="/submissions">All submissions</a></p>
+      <p><a href="/cohorts/{{ cohort.id }}/export.csv">Download cohort CSV</a> · <a href="/cohorts/{{ cohort.id }}/bundle/download">Download cohort bundle</a></p>
+      <div class="metrics">
+        <div class="metric"><strong>{{ summary.total }}</strong><span>Submissions</span></div>
+        <div class="metric"><strong>{{ summary.ready_for_review }}</strong><span>Ready for review</span></div>
+        <div class="metric"><strong>{{ summary.approved_track }}</strong><span>Approved track</span></div>
+        <div class="metric"><strong>{{ summary.exported }}</strong><span>Exported</span></div>
+        <div class="metric"><strong>{{ summary.weak_fields }}</strong><span>Weak fields open</span></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="eyebrow">Attention Queue</div>
+{%- if attention_items is empty -%}
+<div class="empty">No active blockers. This cohort has no unresolved or weak-field follow-up queued right now.</div>
+{%- else -%}
+{%- for item in attention_items -%}
+<p><strong>{{ item.label }}</strong>: {{ item.issues }}. <a href="{{ item.url }}">Open workspace</a> · <a href="{{ item.url }}/review">Review</a> · <a href="{{ item.url }}/exports">Exports</a></p>
+{%- endfor -%}
+{%- endif -%}
+    </section>
+    <section class="card">
+      <div class="eyebrow">Participant Board</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Submission</th>
+            <th>Status</th>
+            <th>Readiness</th>
+            <th>Review</th>
+            <th>Risk</th>
+            <th>Artifacts</th>
+            <th>Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+{%- if rows is empty -%}
+<tr><td colspan="8">No submissions are attached to this cohort yet.</td></tr>
+{%- else -%}
+{%- for row in rows -%}
+<tr><td><strong>{{ row.label }}</strong><br>{{ row.applicant_name }} · {{ row.business_name }}</td><td>{{ row.status }}<br>{{ row.current_step }}</td><td>{{ row.readiness_label }}</td><td>{{ row.reviewed_appendix_count }}/{{ row.reviewed_appendix_total }} appendices<br>{{ row.review_count }} actions</td><td>{{ row.weak_count }} weak · {{ row.unresolved_count }} unresolved</td><td>{{ row.ready_count }}/{{ row.total_count }} ready</td><td>{{ row.updated }}</td><td><div class="links"><a href="{{ row.url }}">Workspace</a><a href="{{ row.url }}/review">Review</a><a href="{{ row.url }}/exports">Exports</a></div></td></tr>
+{%- endfor -%}
+{%- endif -%}
+</tbody>
+      </table>
+    </section>
+  </main>
+{% endblock %}

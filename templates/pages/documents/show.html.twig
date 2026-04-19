@@ -1,0 +1,23 @@
+{% extends "layouts/base.html.twig" %}
+{% block title %}{{ trans('documents.show.page.title') }}{% endblock %}
+{% block head %}  <style>{{ page_styles|raw }}</style>
+{% endblock %}
+{% block body %}  <main>
+    <div class="hero">
+      <div class="eyebrow">Appendix Documents</div>
+      <h1>{{ title }}</h1>
+      <p>These appendix panels follow the real ISET package sequence and print framing from the NorthOps HTML prototype, but they render from stored submission state inside Waaseyaa.</p>
+      <div class="nav">
+        <a href="/submissions">Back to submissions</a>
+        <a href="/submissions/{{ submission_id }}">Structured data</a>
+        <a href="/submissions/{{ submission_id }}/package">Merged package</a>
+        <a href="/submissions/{{ submission_id }}/package/pdf">Generate PDF</a>
+      </div>
+    </div>
+    <div class="stack">
+{%- for section in sections -%}
+{{ section|raw }}
+{%- endfor -%}
+</div>
+  </main>
+{% endblock %}

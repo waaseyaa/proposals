@@ -1,0 +1,21 @@
+{# @var turn array{role:string, provider_meta:string, created_at:string, content:string, patches:list, advisories:list} #}
+<article class="turn {{ turn.role }}"><div class="turn-meta">{{ turn.role }}{% if turn.provider_meta != '' %} · {{ turn.provider_meta }}{% endif %} · {{ turn.created_at != '' ? turn.created_at : 'n/a' }}</div><div>{% if turn.content != '' %}{{ turn.content|nl2br }}{% else %}&nbsp;{% endif %}</div>
+{%- if turn.patches is not empty -%}
+<div class="patches"><strong>Applied:</strong><div class="patch-list">
+{%- for patch in turn.patches -%}
+<div class="patch-item"><code>{{ patch.path }}</code><div class="patch-meta"><span class="confidence">confidence {{ patch.confidence }}</span><span class="{{ patch.resolved ? 'confidence' : 'follow-up' }}">{{ patch.resolved ? 'resolved' : 'follow-up needed' }}</span></div><div class="patch-note">{{ patch.note }}</div></div>
+{%- endfor -%}
+</div></div>
+{%- endif -%}
+{%- if turn.advisories is not empty -%}
+<div class="advisories">
+{%- for group in turn.advisories -%}
+<div><strong>{{ group.heading }}</strong><div class="advisory-list">
+{%- for item in group.items -%}
+<div class="advisory-item"><strong>{{ item.title }}</strong>{% if item.body_is_code %}<div><code>{{ item.body }}</code></div>{% else %}<div>{{ item.body }}</div>{% endif %}</div>
+{%- endfor -%}
+</div></div>
+{%- endfor -%}
+</div>
+{%- endif -%}
+</article>

@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\Response;
+use Twig\Environment;
 use Waaseyaa\Entity\EntityTypeManagerInterface;
 
 final class DocumentController
@@ -24,6 +25,7 @@ final class DocumentController
         private readonly ArtifactBundleService $artifactBundleService,
         private readonly ArtifactAuditService $artifactAuditService,
         private readonly ProposalReviewService $reviewService,
+        private readonly Environment $twig,
     ) {}
 
     public function show(int|string $submissionId): Response
@@ -34,47 +36,17 @@ final class DocumentController
         }
 
         $documents = $this->documentPreviewService->buildAndPersist($submission);
-        $sections = '';
+        $sections = [];
         foreach ($documents as $document) {
-            $sections .= $document['html'];
+            $sections[] = (string) ($document['html'] ?? '');
         }
 
-        $title = htmlspecialchars((string) ($submission->label() ?? 'Submission'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $styles = $this->documentPreviewService->pageStyles();
-
-        $html = <<<'HTML'
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Document Previews · Miikana</title>
-  <style>__STYLES__</style>
-</head>
-<body>
-  <main>
-    <div class="hero">
-      <div class="eyebrow">Appendix Documents</div>
-      <h1>__TITLE__</h1>
-      <p>These appendix panels follow the real ISET package sequence and print framing from the NorthOps HTML prototype, but they render from stored submission state inside Waaseyaa.</p>
-      <div class="nav">
-        <a href="/submissions">Back to submissions</a>
-        <a href="/submissions/__ID__">Structured data</a>
-        <a href="/submissions/__ID__/package">Merged package</a>
-        <a href="/submissions/__ID__/package/pdf">Generate PDF</a>
-      </div>
-    </div>
-    <div class="stack">__DOCUMENTS__</div>
-  </main>
-</body>
-</html>
-HTML;
-
-        $html = str_replace(
-            ['__TITLE__', '__ID__', '__DOCUMENTS__', '__STYLES__'],
-            [$title, htmlspecialchars((string) $submission->id(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $sections, $styles],
-            $html,
-        );
+        $html = $this->twig->render('pages/documents/show.html.twig', [
+            'title' => (string) ($submission->label() ?? 'Submission'),
+            'submission_id' => (string) $submission->id(),
+            'page_styles' => $this->documentPreviewService->pageStyles(),
+            'sections' => $sections,
+        ]);
 
         return new Response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
@@ -87,42 +59,13 @@ HTML;
         }
 
         $package = $this->documentPreviewService->buildPackageAndPersist($submission);
-        $title = htmlspecialchars((string) ($submission->label() ?? 'Submission'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $styles = $this->documentPreviewService->pageStyles();
 
-        $html = <<<'HTML'
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Merged Package · Miikana</title>
-  <style>__STYLES__</style>
-</head>
-<body>
-  <main>
-    <div class="hero">
-      <div class="eyebrow">Merged Package</div>
-      <h1>__TITLE__</h1>
-      <p>This is the printable package bundle: cover sheet plus Appendices A, B, F, G, H, and M in submission order.</p>
-      <div class="nav">
-        <a href="/submissions">Back to submissions</a>
-        <a href="/submissions/__ID__/documents">Appendix documents</a>
-        <a href="#" onclick="window.print(); return false;">Print / Save PDF</a>
-        <a href="/submissions/__ID__/package/pdf">Generate PDF</a>
-      </div>
-    </div>
-    <div class="stack">__PACKAGE__</div>
-  </main>
-</body>
-</html>
-HTML;
-
-        $html = str_replace(
-            ['__TITLE__', '__ID__', '__PACKAGE__', '__STYLES__'],
-            [$title, htmlspecialchars((string) $submission->id(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $package['html'], $styles],
-            $html,
-        );
+        $html = $this->twig->render('pages/documents/package.html.twig', [
+            'title' => (string) ($submission->label() ?? 'Submission'),
+            'submission_id' => (string) $submission->id(),
+            'page_styles' => $this->documentPreviewService->pageStyles(),
+            'package_html' => (string) ($package['html'] ?? ''),
+        ]);
 
         return new Response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
@@ -263,349 +206,50 @@ HTML;
         $appendixNotes = $this->reviewService->latestAppendixNotes($submissionId);
         $appendixNoteActivity = $this->reviewService->latestAppendixNoteActivity($submissionId);
         $artifactAudit = $this->artifactAuditService->summarize($submission);
-        $confidenceWarning = $this->renderConfidenceWarning(
-            is_array($submission->get('confidence_state')) ? $submission->get('confidence_state') : [],
-        );
         $readinessSummary = $this->buildReadinessSummary($submission);
-        $appendixChecklist = $this->renderAppendixChecklist(
-            is_array($submission->get('completion_state')) ? $submission->get('completion_state') : [],
-        );
-        $appendixNotesPanel = $this->renderAppendixNotesPanel($appendixNotes, $appendixNoteActivity);
-        $researchBackedPanel = $this->renderAppliedResearchDraftsPanel(
-            is_array($submission->get('validation_state')) ? $submission->get('validation_state') : [],
-            (string) $submission->id(),
-        );
-        $artifactAuditPanel = $this->renderArtifactAuditPanel($artifactAudit);
 
-        $rows = '';
+        $rows = [];
         foreach ($documents as $document) {
-            $rows .= $this->renderExportRow($document, (string) $submission->id());
+            $rows[] = $this->buildExportRowView($document, (string) $submission->id());
         }
 
-        $notice = str_contains($_SERVER['REQUEST_URI'] ?? '', 'regenerated=pdf')
-            ? '<div class="notice">PDF regenerated from the current merged package.</div>'
-            : '';
-
-        $title = htmlspecialchars((string) ($submission->label() ?? 'Submission'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-        $html = <<<'HTML'
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Exports · Miikana</title>
-  <style>
-    :root {
-      --ink: #171411;
-      --paper: #fffdfa;
-      --sand: #f4ebde;
-      --line: #dbcbb7;
-      --moss: #315845;
-      --rust: #ba5a2d;
-      --muted: #6f665c;
-      --card: #f7efe3;
-      --success: #21663a;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Georgia, serif;
-      color: var(--ink);
-      background: linear-gradient(180deg, #f8f3eb 0%, #efe5d8 100%);
-    }
-    main {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 40px 24px 64px;
-    }
-    a { color: var(--moss); }
-    .hero, .card {
-      background: rgba(255, 253, 250, 0.94);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
-    }
-    .hero { margin-bottom: 24px; }
-    .eyebrow {
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      font-size: 0.72rem;
-      color: var(--rust);
-      font-weight: 700;
-    }
-    h1 {
-      margin: 8px 0 10px;
-      font-size: clamp(2rem, 4vw, 3.2rem);
-      letter-spacing: -0.04em;
-    }
-    p { line-height: 1.8; color: var(--muted); }
-    .nav {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 16px;
-    }
-    .nav a {
-      padding: 8px 14px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      text-decoration: none;
-      background: rgba(255,255,255,0.7);
-    }
-    .notice {
-      margin: 16px 0 0;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(33, 102, 58, 0.18);
-      background: rgba(33, 102, 58, 0.08);
-      color: var(--success);
-      font-weight: 700;
-    }
-    .review-card {
-      margin-bottom: 24px;
-    }
-    .review-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 12px;
-    }
-    .review-metric {
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: #fffefd;
-    }
-    .review-metric strong {
-      display: block;
-      font-size: 0.75rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    .review-note {
-      margin-top: 14px;
-      border-left: 4px solid var(--rust);
-      padding-left: 14px;
-    }
-    .readiness-strip {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 14px;
-      color: var(--muted);
-    }
-    .checklist {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 14px;
-    }
-    .checklist-item {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
-      background: #fffefd;
-    }
-    .checklist-item strong {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.76rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-    }
-    .note-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 14px;
-    }
-    .note-item {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
-      background: #fffefd;
-    }
-    .note-item strong {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.76rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-    }
-    .note-meta {
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 0.86rem;
-    }
-    .warning {
-      margin: 18px 0 0;
-      padding: 14px 16px;
-      border-radius: 14px;
-      border: 1px solid rgba(186, 90, 45, 0.28);
-      background: rgba(186, 90, 45, 0.08);
-      color: var(--ink);
-    }
-    .warning strong {
-      display: block;
-      margin-bottom: 6px;
-      color: var(--rust);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 6px;
-    }
-    th, td {
-      padding: 12px 10px;
-      border-top: 1px solid var(--line);
-      text-align: left;
-      vertical-align: top;
-    }
-    th {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-      background: var(--card);
-    }
-    .status {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(49, 88, 69, 0.08);
-      color: var(--moss);
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .actions a {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: #fff;
-      text-decoration: none;
-      font-size: 0.88rem;
-    }
-    code {
-      background: #f3ede5;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 2px 6px;
-    }
-    @media (max-width: 860px) {
-      .checklist { grid-template-columns: 1fr 1fr; }
-      .note-grid { grid-template-columns: 1fr; }
-      .review-grid { grid-template-columns: 1fr 1fr; }
-      table, thead, tbody, tr, th, td { display: block; }
-      thead { display: none; }
-      td { padding-left: 0; }
-      tr + tr td:first-child { border-top: 1px solid var(--line); }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <section class="hero">
-      <div class="eyebrow">Exports</div>
-      <h1>__TITLE__</h1>
-      <p>This surface shows the current export artifacts for the submission, including generated appendix HTML, merged package state, and the latest PDF output. Use it to open, download, or regenerate deliverables without hunting for direct URLs.</p>
-      <div class="nav">
-        <a href="/submissions">Back to submissions</a>
-        <a href="/submissions/__ID__">Structured data</a>
-        <a href="/submissions/__ID__/documents">Appendix documents</a>
-        <a href="/submissions/__ID__/package">Merged package</a>
-        <a href="/submissions/__ID__/package/pdf">Open PDF</a>
-        <a href="/submissions/__ID__/exports/bundle/download">Download bundle</a>
-      </div>
-      __NOTICE__
-    </section>
-    <section class="card review-card">
-      <div class="eyebrow">Review State</div>
-      <p>The export path now reflects staff workflow state, so reviewers can see whether this package is still in revisions or already moving toward approval and submission.</p>
-      <div class="review-grid">
-        <div class="review-metric"><strong>Status</strong>__REVIEW_STATUS__</div>
-        <div class="review-metric"><strong>Current Step</strong>__REVIEW_STEP__</div>
-        <div class="review-metric"><strong>Review Actions</strong>__REVIEW_COUNT__</div>
-        <div class="review-metric"><strong>Appendices Reviewed</strong>__REVIEWED_APPENDICES__</div>
-        <div class="review-metric"><strong>Latest Activity</strong>__REVIEW_AT__</div>
-      </div>
-      <div class="readiness-strip"><span>Readiness: __READINESS_LABEL__</span><span>Unresolved: __READINESS_UNRESOLVED__</span><span>Low confidence: __READINESS_WEAK__</span></div>
-      __ARTIFACT_AUDIT_PANEL__
-      __APPENDIX_CHECKLIST__
-      __APPENDIX_NOTES_PANEL__
-      __RESEARCH_BACKED_PANEL__
-      <div class="review-note"><strong>Latest Note</strong><div>__REVIEW_NOTE__</div></div>
-      __CONFIDENCE_WARNING__
-      <p><a href="/submissions/__ID__/review">Open full review cockpit</a></p>
-    </section>
-    <section class="card">
-      <div class="eyebrow">Artifacts</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Artifact</th>
-            <th>Status</th>
-            <th>Version</th>
-            <th>Generated</th>
-            <th>Size</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>__ROWS__</tbody>
-      </table>
-    </section>
-  </main>
-</body>
-</html>
-HTML;
-
-        $html = str_replace(
-            ['__TITLE__', '__ID__', '__NOTICE__', '__ROWS__', '__REVIEW_STATUS__', '__REVIEW_STEP__', '__REVIEW_COUNT__', '__REVIEWED_APPENDICES__', '__REVIEW_AT__', '__REVIEW_NOTE__', '__CONFIDENCE_WARNING__', '__READINESS_LABEL__', '__READINESS_UNRESOLVED__', '__READINESS_WEAK__', '__ARTIFACT_AUDIT_PANEL__', '__APPENDIX_CHECKLIST__', '__APPENDIX_NOTES_PANEL__', '__RESEARCH_BACKED_PANEL__'],
-            [
-                $title,
-                htmlspecialchars((string) $submission->id(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $notice,
-                $rows,
-                htmlspecialchars((string) $reviewSummary['status'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) $reviewSummary['current_step'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) $reviewSummary['review_count'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) $reviewSummary['reviewed_appendix_count'] . '/' . (string) $reviewSummary['reviewed_appendix_total'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) ($reviewSummary['latest_created_at'] ?: 'n/a'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) (($reviewSummary['latest_comment'] ?: 'No staff review notes recorded yet.')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $confidenceWarning,
-                htmlspecialchars($readinessSummary['label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) $readinessSummary['unresolved_count'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) $readinessSummary['weak_count'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $artifactAuditPanel,
-                $appendixChecklist,
-                $appendixNotesPanel,
-                $researchBackedPanel,
+        $html = $this->twig->render('pages/documents/exports.html.twig', [
+            'title' => (string) ($submission->label() ?? 'Submission'),
+            'submission_id' => (string) $submission->id(),
+            'notice_regenerated' => str_contains($_SERVER['REQUEST_URI'] ?? '', 'regenerated=pdf'),
+            'review' => [
+                'status' => (string) $reviewSummary['status'],
+                'current_step' => (string) $reviewSummary['current_step'],
+                'review_count' => (string) $reviewSummary['review_count'],
+                'reviewed_appendices' => (string) $reviewSummary['reviewed_appendix_count'] . '/' . (string) $reviewSummary['reviewed_appendix_total'],
+                'latest_created_at' => (string) ($reviewSummary['latest_created_at'] ?: 'n/a'),
+                'latest_comment' => (string) ($reviewSummary['latest_comment'] ?: 'No staff review notes recorded yet.'),
             ],
-            $html,
-        );
+            'readiness' => $readinessSummary,
+            'artifact_audit' => $this->buildArtifactAuditView($artifactAudit),
+            'completion_state' => is_array($submission->get('completion_state')) ? $submission->get('completion_state') : [],
+            'appendix_notes' => $this->buildAppendixNotesView($appendixNotes, $appendixNoteActivity),
+            'research_backed' => $this->buildResearchBackedView(
+                is_array($submission->get('validation_state')) ? $submission->get('validation_state') : [],
+                (string) $submission->id(),
+            ),
+            'weak_fields' => $this->buildWeakFieldsView(
+                is_array($submission->get('confidence_state')) ? $submission->get('confidence_state') : [],
+            ),
+            'rows' => $rows,
+        ]);
 
         return new Response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 
-    private function renderExportRow(object $document, string $submissionId): string
+    /**
+     * @return array<string,mixed>
+     */
+    private function buildExportRowView(object $document, string $submissionId): array
     {
         $documentType = (string) ($document->get('document_type') ?? '');
-        $label = htmlspecialchars((string) ($document->label() ?? $documentType), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $version = htmlspecialchars((string) ($document->get('version') ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $generated = htmlspecialchars((string) ($document->get('generated_at') ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $version = (string) ($document->get('version') ?? '');
+        $generated = (string) ($document->get('generated_at') ?? '');
         $storagePath = (string) ($document->get('storage_path') ?? '');
         $metadata = $document->get('metadata');
         $size = 'n/a';
@@ -616,51 +260,43 @@ HTML;
             $size = $this->formatBytes(filesize($storagePath) ?: 0);
         }
 
-        $actions = $this->actionsFor($documentType, $submissionId);
-
-        return sprintf(
-            '<tr><td><strong>%s</strong><br><code>%s</code></td><td><span class="status">%s</span></td><td>%s</td><td>%s</td><td>%s</td><td><div class="actions">%s</div></td></tr>',
-            $label,
-            htmlspecialchars($documentType, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            $storagePath !== '' ? 'ready' : 'pending',
-            $version !== '' ? $version : '&nbsp;',
-            $generated !== '' ? $generated : '&nbsp;',
-            htmlspecialchars($size, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            $actions,
-        );
+        return [
+            'label' => (string) ($document->label() ?? $documentType),
+            'document_type' => $documentType,
+            'ready' => $storagePath !== '',
+            'version' => $version,
+            'generated' => $generated,
+            'size' => $size,
+            'actions' => $this->buildActionsView($documentType, $submissionId),
+        ];
     }
 
-    private function actionsFor(string $documentType, string $submissionId): string
+    /**
+     * @return list<array{href:string,label:string}>
+     */
+    private function buildActionsView(string $documentType, string $submissionId): array
     {
+        $base = '/submissions/' . rawurlencode($submissionId);
         return match ($documentType) {
-            'merged_package_pdf' => implode('', [
-                $this->actionLink('/submissions/' . rawurlencode($submissionId) . '/package/pdf', 'Open'),
-                $this->actionLink('/submissions/' . rawurlencode($submissionId) . '/package/pdf/download', 'Download'),
-                $this->actionLink('/submissions/' . rawurlencode($submissionId) . '/exports/pdf/regenerate', 'Regenerate'),
-            ]),
-            'artifact_bundle_zip' => implode('', [
-                $this->actionLink('/submissions/' . rawurlencode($submissionId) . '/exports/bundle/download', 'Download bundle'),
-            ]),
-            'merged_package_preview' => implode('', [
-                $this->actionLink('/submissions/' . rawurlencode($submissionId) . '/package', 'Open package'),
-                $this->actionLink('/submissions/' . rawurlencode($submissionId) . '/exports/file/' . rawurlencode($documentType), 'Open HTML'),
-                $this->actionLink('/submissions/' . rawurlencode($submissionId) . '/exports/file/' . rawurlencode($documentType) . '/download', 'Download'),
-            ]),
-            default => implode('', [
-                $this->actionLink('/submissions/' . rawurlencode($submissionId) . '/documents', 'Open appendices'),
-                $this->actionLink('/submissions/' . rawurlencode($submissionId) . '/exports/file/' . rawurlencode($documentType), 'Open HTML'),
-                $this->actionLink('/submissions/' . rawurlencode($submissionId) . '/exports/file/' . rawurlencode($documentType) . '/download', 'Download'),
-            ]),
+            'merged_package_pdf' => [
+                ['href' => $base . '/package/pdf', 'label' => 'Open'],
+                ['href' => $base . '/package/pdf/download', 'label' => 'Download'],
+                ['href' => $base . '/exports/pdf/regenerate', 'label' => 'Regenerate'],
+            ],
+            'artifact_bundle_zip' => [
+                ['href' => $base . '/exports/bundle/download', 'label' => 'Download bundle'],
+            ],
+            'merged_package_preview' => [
+                ['href' => $base . '/package', 'label' => 'Open package'],
+                ['href' => $base . '/exports/file/' . rawurlencode($documentType), 'label' => 'Open HTML'],
+                ['href' => $base . '/exports/file/' . rawurlencode($documentType) . '/download', 'label' => 'Download'],
+            ],
+            default => [
+                ['href' => $base . '/documents', 'label' => 'Open appendices'],
+                ['href' => $base . '/exports/file/' . rawurlencode($documentType), 'label' => 'Open HTML'],
+                ['href' => $base . '/exports/file/' . rawurlencode($documentType) . '/download', 'label' => 'Download'],
+            ],
         };
-    }
-
-    private function actionLink(string $href, string $label): string
-    {
-        return sprintf(
-            '<a href="%s">%s</a>',
-            htmlspecialchars($href, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-        );
     }
 
     private function formatBytes(int $bytes): string
@@ -678,8 +314,9 @@ HTML;
 
     /**
      * @param array<string, mixed> $confidenceState
+     * @return list<string>
      */
-    private function renderConfidenceWarning(array $confidenceState): string
+    private function buildWeakFieldsView(array $confidenceState): array
     {
         $weak = [];
 
@@ -697,14 +334,7 @@ HTML;
             }
         }
 
-        if ($weak === []) {
-            return '';
-        }
-
-        return sprintf(
-            '<div class="warning"><strong>Low-confidence fields are still present in this package.</strong><div>%s</div></div>',
-            htmlspecialchars(implode(' · ', $weak), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-        );
+        return $weak;
     }
 
     /**
@@ -742,36 +372,10 @@ HTML;
     }
 
     /**
-     * @param array<string, mixed> $completionState
-     */
-    private function renderAppendixChecklist(array $completionState): string
-    {
-        $appendices = is_array($completionState['appendices'] ?? null) ? $completionState['appendices'] : [];
-        $labels = [
-            'A' => 'Appendix A',
-            'B' => 'Appendix B',
-            'F' => 'Appendix F',
-            'G' => 'Appendix G',
-            'H' => 'Appendix H',
-            'M' => 'Appendix M',
-        ];
-
-        $items = [];
-        foreach ($labels as $key => $label) {
-            $items[] = sprintf(
-                '<div class="checklist-item"><strong>%s</strong>%s</div>',
-                htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                (bool) ($appendices[$key] ?? false) ? 'Complete' : 'Needs work',
-            );
-        }
-
-        return '<div class="checklist">' . implode('', $items) . '</div>';
-    }
-
-    /**
      * @param array<string,mixed> $validationState
+     * @return list<array<string,string>>
      */
-    private function renderAppliedResearchDraftsPanel(array $validationState, string $submissionId): string
+    private function buildResearchBackedView(array $validationState, string $submissionId): array
     {
         $drafts = is_array($validationState['research_drafts'] ?? null) ? $validationState['research_drafts'] : [];
         $items = [];
@@ -781,51 +385,40 @@ HTML;
                 continue;
             }
 
-            $items[] = sprintf(
-                '<div class="note-item"><strong>%s</strong><div>%s</div><div class="note-meta"><span>provider: %s</span> · <span>quality: %s</span> · <span>applied: %s</span> · <a href="/submissions/%s?edit_path=%s">Inspect field</a></div></div>',
-                htmlspecialchars((string) ($draft['target_path'] ?? 'draft'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) ($draft['source_query'] ?? 'n/a'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) ($draft['source_provider'] ?? 'research'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) ($draft['draft_quality'] ?? 'unrated'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars((string) ($draft['applied_at'] ?? 'n/a'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                rawurlencode((string) ($draft['target_path'] ?? '')),
-            );
+            $items[] = [
+                'target_path' => (string) ($draft['target_path'] ?? 'draft'),
+                'source_query' => (string) ($draft['source_query'] ?? 'n/a'),
+                'source_provider' => (string) ($draft['source_provider'] ?? 'research'),
+                'draft_quality' => (string) ($draft['draft_quality'] ?? 'unrated'),
+                'applied_at' => (string) ($draft['applied_at'] ?? 'n/a'),
+                'submission_id' => $submissionId,
+                'target_path_encoded' => rawurlencode((string) ($draft['target_path'] ?? '')),
+            ];
         }
 
-        if ($items === []) {
-            return '<div class="warning"><strong>No active research-backed updates</strong><div>No currently applied field values were promoted from research drafts.</div></div>';
-        }
-
-        return '<div class="note-grid">' . implode('', $items) . '</div>';
+        return $items;
     }
 
     /**
      * @param array{ready_count:int,total_count:int,missing:list<string>,items:list<array{document_type:string,label:string,ready:bool}>} $artifactAudit
+     * @return array{ready_count:int,total_count:int,missing_count:int,missing:list<string>}
      */
-    private function renderArtifactAuditPanel(array $artifactAudit): string
+    private function buildArtifactAuditView(array $artifactAudit): array
     {
-        $summary = sprintf(
-            '<div class="readiness-strip"><span>Artifacts ready: %d/%d</span><span>Missing: %d</span></div>',
-            (int) $artifactAudit['ready_count'],
-            (int) $artifactAudit['total_count'],
-            count($artifactAudit['missing']),
-        );
-
-        if ($artifactAudit['missing'] === []) {
-            return $summary;
-        }
-
-        return $summary . sprintf(
-            '<div class="warning"><strong>Artifact audit</strong><div>%s</div></div>',
-            htmlspecialchars(implode(' · ', $artifactAudit['missing']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-        );
+        return [
+            'ready_count' => (int) $artifactAudit['ready_count'],
+            'total_count' => (int) $artifactAudit['total_count'],
+            'missing_count' => count($artifactAudit['missing']),
+            'missing' => $artifactAudit['missing'],
+        ];
     }
 
     /**
      * @param array<string, array{comment:string,created_at:string,title:string}> $appendixNotes
+     * @param array<string, array{action_type:string,created_at:string,title:string,comment:string}> $appendixNoteActivity
+     * @return list<array{label:string,body:string,body_is_raw:bool,meta:string}>
      */
-    private function renderAppendixNotesPanel(array $appendixNotes, array $appendixNoteActivity): string
+    private function buildAppendixNotesView(array $appendixNotes, array $appendixNoteActivity): array
     {
         $labels = [
             'A' => 'Appendix A',
@@ -850,34 +443,34 @@ HTML;
                 'comment' => '',
             ];
 
-            $body = trim((string) $note['comment']) !== ''
-                ? nl2br(htmlspecialchars((string) $note['comment'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'))
+            $comment = trim((string) $note['comment']);
+            $body = $comment !== ''
+                ? nl2br(htmlspecialchars($comment, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'))
                 : 'No appendix-specific review note recorded.';
-            $meta = $this->renderAppendixNoteActivityMeta($note, $activity);
 
-            $items[] = sprintf(
-                '<div class="note-item"><strong>%s</strong><div>%s</div><div class="note-meta">%s</div></div>',
-                htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $body,
-                $meta,
-            );
+            $items[] = [
+                'label' => $label,
+                'body' => $body,
+                'body_is_raw' => $comment !== '', // nl2br output must pass through raw
+                'meta' => $this->appendixNoteActivityMeta($note, $activity),
+            ];
         }
 
-        return '<div class="note-grid">' . implode('', $items) . '</div>';
+        return $items;
     }
 
     /**
      * @param array{comment:string,created_at:string,title:string} $note
      * @param array{action_type:string,created_at:string,title:string,comment:string} $activity
      */
-    private function renderAppendixNoteActivityMeta(array $note, array $activity): string
+    private function appendixNoteActivityMeta(array $note, array $activity): string
     {
         if (trim((string) ($note['created_at'] ?? '')) !== '') {
-            return htmlspecialchars('Latest note saved at ' . (string) $note['created_at'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            return 'Latest note saved at ' . (string) $note['created_at'];
         }
 
         if (($activity['action_type'] ?? '') === 'appendix_note_cleared' && trim((string) ($activity['created_at'] ?? '')) !== '') {
-            return htmlspecialchars('Latest note activity: cleared at ' . (string) $activity['created_at'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            return 'Latest note activity: cleared at ' . (string) $activity['created_at'];
         }
 
         return 'No note activity yet';

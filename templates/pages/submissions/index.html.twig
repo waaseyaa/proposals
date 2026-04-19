@@ -1,0 +1,137 @@
+{% extends "layouts/base.html.twig" %}
+{% block title %}{{ trans('submissions.index.page.title') }}{% endblock %}
+{% block head %}  <style>
+    :root {
+      --ink: #171411;
+      --paper: #fffdfa;
+      --sand: #f2eadf;
+      --line: #dbccb8;
+      --moss: #315845;
+      --rust: #ba5a2d;
+      --muted: #6f665c;
+    }
+    body {
+      margin: 0;
+      font-family: Georgia, serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f8f3eb 0%, #efe5d8 100%);
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+    a { color: var(--moss); }
+    .card {
+      background: rgba(255, 253, 250, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 24px;
+    }
+    .list {
+      display: grid;
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .item {
+      background: #fffaf2;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .item h2 {
+      margin: 0 0 10px;
+      font-size: 1.35rem;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(49, 88, 69, 0.08);
+      color: var(--moss);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+    .empty {
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      background: #fffaf5;
+    }
+    h1 {
+      margin: 6px 0 12px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      letter-spacing: -0.04em;
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      color: var(--rust);
+      font-weight: 700;
+    }
+    p, li { line-height: 1.8; color: var(--muted); }
+    ul { padding-left: 18px; }
+    code {
+      background: #f3ede5;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 2px 6px;
+      color: var(--ink);
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+{% endblock %}
+{% block body %}  <main>
+    <div class="grid">
+      <section class="card">
+        <div class="eyebrow">Submission Workspace</div>
+        <h1>ISET proposal submissions are now a real entity-backed surface.</h1>
+        <p>
+          This view is backed by <code>proposal_submission</code> entities. The NorthOps seed importer
+          hydrates canonical data and a source-form snapshot from the latest ISET package in <code>~/NorthOps</code>.
+        </p>
+        <div class="list">
+{%- if items is empty -%}
+<div class="empty">
+  <p>No proposal submissions are stored yet.</p>
+  <p>Run <code>php bin/waaseyaa northops:seed</code> to import the latest package from <code>~/NorthOps</code>.</p>
+</div>
+{%- else -%}
+{%- for item in items -%}
+{%- include "components/domain/submissions/submission-row.html.twig" with { item: item } -%}
+{%- endfor -%}
+{%- endif -%}
+</div>
+      </section>
+      <aside class="card">
+        <div class="eyebrow">Current Surface</div>
+        <ul>
+          <li>NorthOps seed command available</li>
+          <li>Canonical submission JSON persisted per entity</li>
+          <li>Original form values retained for mapping work</li>
+          <li>Per-submission detail route available</li>
+        </ul>
+        <p><a href="/">Back to dashboard</a></p>
+      </aside>
+    </div>
+  </main>
+{% endblock %}

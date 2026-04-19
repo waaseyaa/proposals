@@ -65,6 +65,75 @@ return [
     // Dashboard — graph panel
     'dashboard.graph.title' => 'Bimaaji Graph Snapshot',
 
+    // Dashboard — page/browser title (override of base.title on the dashboard route)
+    'dashboard.page.title' => 'Miikana',
+
     // Base layout — defaults
     'base.title' => 'Miikana',
+
+    // Intake — scaffold (template still hardcodes strings for byte-equivalence; keys live here
+    // for the follow-up pass that switches the intake template to trans() calls). Exception:
+    // 'intake.page.title' is used now in the <title> block override, since browser tabs are a
+    // low-risk conversion that validates trans() works in block content.
+    'intake.page.title' => 'Intake · Miikana',
+    'intake.hero.eyebrow' => 'Conversational Intake',
+    'intake.hero.lede' => 'This is the bounded intake loop: every turn is stored, structured patches are applied into canonical_data, and unresolved fields stay visible instead of disappearing into chat history.',
+    'intake.hero.provider_label' => 'Provider mode:',
+    'intake.nav.back' => 'Back to submissions',
+    'intake.nav.structured' => 'Structured data',
+    'intake.nav.documents' => 'Appendix documents',
+    'intake.nav.review' => 'Review',
+    'intake.notice.updated' => 'Intake turn stored and structured patches applied.',
+    'intake.notice.error' => 'Unable to apply the intake turn. Check the message and try again.',
+    'intake.transcript.title' => 'Transcript',
+    'intake.transcript.empty' => 'No intake turns recorded yet.',
+    'intake.research_log.title' => 'Research Log',
+    'intake.research_log.empty' => 'No research artifacts captured yet.',
+    'intake.research_log.citations' => 'Citations',
+    'intake.research_log.default_citation_title' => 'Source',
+    'intake.research_log.no_summary' => 'No summary available.',
+    'intake.new_turn.title' => 'New Turn',
+    'intake.new_turn.hint_prefix' => 'Use direct field lines like',
+    'intake.new_turn.hint_example_1' => 'business.operations.launch_timeline: Within 10 days',
+    'intake.new_turn.hint_or' => 'or short statements like',
+    'intake.new_turn.hint_example_2' => 'customers include Band office, local families',
+    'intake.new_turn.placeholder' => 'Describe the business, answer a follow-up question, or send direct field lines.',
+    'intake.new_turn.submit' => 'Apply Intake Turn',
+    'intake.next_question.title' => 'Next Question',
+    'intake.next_question.priority_suffix' => 'priority',
+    'intake.next_question.empty' => 'No queued next question. The current question plan is satisfied.',
+    'intake.unresolved.title' => 'Unresolved Core Fields',
+    'intake.unresolved.empty' => 'No unresolved core intake fields.',
+    'intake.turn.patches_applied' => 'Applied:',
+    'intake.turn.patch_confidence_label' => 'confidence',
+    'intake.turn.patch_resolved' => 'resolved',
+    'intake.turn.patch_unresolved' => 'follow-up needed',
+    'intake.turn.no_timestamp' => 'n/a',
+    'intake.turn.hint_title' => 'Follow-up hint',
+    'intake.turn.hints_heading' => 'Provider Hints',
+    'intake.turn.research_requests_heading' => 'Research Requests',
+    'intake.turn.executed_heading' => 'Executed Research',
+    'intake.turn.executed_suffix' => 'executed',
+    'intake.turn.research_insights_heading' => 'Research Summary',
+    'intake.turn.research_insight_title' => 'Research Insight',
+
+    // Cohorts — page titles (two routes converted to Twig in prompt #6). Remaining
+    // cohort-template strings stay hardcoded for byte-equivalence; a later dedicated
+    // pass promotes them to trans() once a second surface re-uses the same labels.
+    'cohorts.index.page.title' => 'Cohorts · Miikana',
+    'cohorts.show.page.title' => 'Cohort Detail · Miikana',
+
+    // Submissions — page titles. Index landed in prompt #7, show() in prompt #8.
+    // Remaining strings stay hardcoded until a dedicated trans() pass.
+    'submissions.index.page.title' => 'Submissions · Miikana',
+    'submissions.show.page.title' => 'Submission Detail · Miikana',
+
+    // Reviews — page title (review cockpit migrated in prompt #8).
+    'reviews.show.page.title' => 'Review · Miikana',
+
+    // Documents — page titles (three HTML routes migrated in prompt #8). Export
+    // file-view and download routes stay non-Twig (raw file contents / binary).
+    'documents.show.page.title' => 'Document Previews · Miikana',
+    'documents.package.page.title' => 'Merged Package · Miikana',
+    'documents.exports.page.title' => 'Exports · Miikana',
 ];

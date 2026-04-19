@@ -1,5 +1,5 @@
 {% extends "layouts/base.html.twig" %}
-{% block title %}Miikana{% endblock %}
+{% block title %}{{ trans('dashboard.page.title') }}{% endblock %}
 {% block head %}  <style>
     :root {
       --ink: #1b1916;
@@ -146,42 +146,40 @@
 {% block body %}  <main>
     <section class="hero">
       <div class="card">
-        <div class="eyebrow">NorthOps on Waaseyaa</div>
-        <h1>Miikana</h1>
+        <div class="eyebrow">{{ trans('dashboard.hero.eyebrow') }}</div>
+        <h1>{{ trans('dashboard.hero.title') }}</h1>
         <p class="lede">
-          The first real product shell is live. This app starts from a schema-first proposal domain,
-          not a generic form runner, and it already carries Bimaaji for graph introspection and
-          sovereignty-aware mutation guardrails from the start.
+          {{ trans('dashboard.hero.lede') }}
         </p>
         <div class="stats">
-          <div class="stat"><strong>{{ submission_count }}</strong><span>Submission workspaces live</span></div>
-          <div class="stat"><strong>{{ cohort_count }}</strong><span>Cohorts tracked</span></div>
-          <div class="stat"><strong>6</strong><span>ISET appendices targeted</span></div>
-          <div class="stat"><strong>{{ exported_count }}</strong><span>Exports currently on disk</span></div>
+          <div class="stat"><strong>{{ submission_count }}</strong><span>{{ trans('dashboard.stat.submissions_label') }}</span></div>
+          <div class="stat"><strong>{{ cohort_count }}</strong><span>{{ trans('dashboard.stat.cohorts_label') }}</span></div>
+          <div class="stat"><strong>6</strong><span>{{ trans('dashboard.stat.appendices_label') }}</span></div>
+          <div class="stat"><strong>{{ exported_count }}</strong><span>{{ trans('dashboard.stat.exports_label') }}</span></div>
         </div>
         <div class="links">
-          <a href="/submissions">Open submissions surface</a>
-          <a class="secondary" href="/cohorts">Open cohort board</a>
-          <a class="secondary" href="/api">Inspect API surface</a>
+          <a href="/submissions">{{ trans('dashboard.links.submissions') }}</a>
+          <a class="secondary" href="/cohorts">{{ trans('dashboard.links.cohorts') }}</a>
+          <a class="secondary" href="/api">{{ trans('dashboard.links.api') }}</a>
         </div>
       </div>
       <div class="stack">
         <div class="card">
-          <div class="mini">Current Build</div>
+          <div class="mini">{{ trans('dashboard.current_build.title') }}</div>
           <ul>
-            <li>Proposal entities registered</li>
-            <li>NorthOps sovereignty profile active</li>
-            <li>Bimaaji graph available for app introspection</li>
-            <li>Review, exports, and cohort surfaces in place</li>
+            <li>{{ trans('dashboard.current_build.item1') }}</li>
+            <li>{{ trans('dashboard.current_build.item2') }}</li>
+            <li>{{ trans('dashboard.current_build.item3') }}</li>
+            <li>{{ trans('dashboard.current_build.item4') }}</li>
           </ul>
         </div>
         <div class="card">
-          <div class="mini">Next Code</div>
+          <div class="mini">{{ trans('dashboard.next_code.title') }}</div>
           <ul>
-            <li>Cohort dashboard for multi-participant operations</li>
-            <li>Deterministic readiness checks against generated artifacts</li>
-            <li>Bounded AI provider behind intake orchestration</li>
-            <li>More than one seeded participant submission</li>
+            <li>{{ trans('dashboard.next_code.item1') }}</li>
+            <li>{{ trans('dashboard.next_code.item2') }}</li>
+            <li>{{ trans('dashboard.next_code.item3') }}</li>
+            <li>{{ trans('dashboard.next_code.item4') }}</li>
           </ul>
         </div>
       </div>
@@ -189,17 +187,17 @@
 
     <section class="panels">
       <div class="card">
-        <div class="eyebrow">Architecture Spine</div>
+        <div class="eyebrow">{{ trans('dashboard.spine.title') }}</div>
         <ol>
-          <li><strong>Pipeline definitions</strong> hold reusable form maps and workflow metadata.</li>
-          <li><strong>Submissions</strong> hold canonical data, transcript state, validation, and unresolved items.</li>
-          <li><strong>Documents</strong> capture deterministic generated artifacts from canonical state.</li>
-          <li><strong>Reviews</strong> track staff comments and approval flow.</li>
-          <li><strong>Bimaaji</strong> exposes app graph and sovereignty context as machine-readable structure.</li>
+          <li><strong>{{ trans('dashboard.spine.item1_label') }}</strong> {{ trans('dashboard.spine.item1_body') }}</li>
+          <li><strong>{{ trans('dashboard.spine.item2_label') }}</strong> {{ trans('dashboard.spine.item2_body') }}</li>
+          <li><strong>{{ trans('dashboard.spine.item3_label') }}</strong> {{ trans('dashboard.spine.item3_body') }}</li>
+          <li><strong>{{ trans('dashboard.spine.item4_label') }}</strong> {{ trans('dashboard.spine.item4_body') }}</li>
+          <li><strong>{{ trans('dashboard.spine.item5_label') }}</strong> {{ trans('dashboard.spine.item5_body') }}</li>
         </ol>
       </div>
       <div class="card">
-        <div class="eyebrow">Bimaaji Graph Snapshot</div>
+        <div class="eyebrow">{{ trans('dashboard.graph.title') }}</div>
         <pre>{{ graph_json }}</pre>
       </div>
     </section>

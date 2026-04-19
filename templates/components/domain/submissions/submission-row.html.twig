@@ -1,0 +1,14 @@
+{# @var item array{id:string, url:string, title:string, status:string, applicant:string, business:string, cohort:?array, review_meta:string, revision_note:?string, weak_count:int, weak_single:bool, readiness_label:string} #}
+<article class="item"><span class="badge">{{ item.status }}</span><h2><a href="{{ item.url }}">{{ item.title }}</a></h2><p>Canonical proposal state and imported source form data are attached to this submission.</p>
+{%- if item.revision_note -%}
+<p><span class="badge" style="background: rgba(186, 90, 45, 0.12); color: #ba5a2d;">Revision Note</span> {{ item.revision_note }}</p>
+{%- endif -%}
+{%- if item.weak_count > 0 -%}
+<p><span class="badge" style="background: rgba(186, 90, 45, 0.12); color: #ba5a2d;">Low Confidence</span> {{ item.weak_count }} {{ item.weak_single ? 'field needs follow-up' : 'fields need follow-up' }}.</p>
+{%- endif -%}
+<p><span class="badge" style="background: rgba(49, 88, 69, 0.12); color: #315845;">Readiness</span> {{ item.readiness_label }}</p>
+<div class="meta"><span>ID {{ item.id }}</span><span>Applicant: {{ item.applicant }}</span><span>Business: {{ item.business }}</span>
+{%- if item.cohort -%}
+<span>Cohort: <a href="/cohorts/{{ item.cohort.id|url_encode }}">{{ item.cohort.label }}</a></span>
+{%- endif -%}
+<span>{{ item.review_meta }}</span><span><a href="{{ item.url }}/intake">Intake</a></span><span><a href="{{ item.url }}/documents">Documents</a></span><span><a href="{{ item.url }}/package">Package</a></span><span><a href="{{ item.url }}/package/pdf">PDF</a></span><span><a href="{{ item.url }}/exports/bundle/download">Bundle ZIP</a></span><span><a href="{{ item.url }}/exports">Exports</a></span><span><a href="{{ item.url }}/review">Review</a></span></div></article>
