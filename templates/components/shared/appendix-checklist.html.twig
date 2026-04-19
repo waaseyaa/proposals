@@ -1,0 +1,12 @@
+{# @var completion_state array with 'appendices' key mapping 'A'|'B'|'F'|'G'|'H'|'M' => bool. Renders
+ #   the proposal-domain appendix set in fixed order as a checklist. ≥3 call sites across controllers
+ #   (SubmissionController::show, ReviewController::show, DocumentController::exports) — promoted to
+ #   shared after the third identical-markup copy surfaced in prompt #8.
+ #}
+{%- set appendices = completion_state.appendices ?? {} -%}
+{%- set labels = {'A': 'Appendix A', 'B': 'Appendix B', 'F': 'Appendix F', 'G': 'Appendix G', 'H': 'Appendix H', 'M': 'Appendix M'} -%}
+<div class="checklist">
+{%- for key, label in labels -%}
+<div class="checklist-item"><strong>{{ label }}</strong>{{ (appendices[key] ?? false) ? 'Complete' : 'Needs work' }}</div>
+{%- endfor -%}
+</div>

@@ -11,12 +11,12 @@ reference implementation in the same pass that created the conventions doc.
 | Controller | LOC | Public methods | Inline-HTML markers | Inline-HTML complexity | Est. work units |
 |---|---:|---:|---:|---|---:|
 | DashboardController | 52 | 1 | 0 | — (done) | — |
-| IntakeController | 546 | 2 | 2 | medium — one full page + POST redirect | 1 |
-| CohortController | 540 | 4 | 5 | medium — list + detail page, plus 2 non-HTML responses | 1 |
-| SubmissionController | 1886 | 8 | 5 | high — list + detail, many mutation endpoints, ready-for-review flow | 2 |
-| ReviewController | 1139 | 11 | 2 | high — review cockpit with comments/appendix notes, 10+ POST handlers, CSRF surface | 2 |
-| DocumentController | 902 | 9 | 10 | high — preview HTML, PDF bytes, ZIP bundles, file downloads (mostly non-HTML) | 2 |
-| **Total** | **5,013** | **34** | **24** | — | **~8** |
+| IntakeController | 546 → 233 | 2 | 2 | medium — one full page + POST redirect | done 2026-04-18 |
+| CohortController | 540 → 279 | 4 | 5 | medium — list + detail page, plus 2 non-HTML responses | done 2026-04-18 |
+| SubmissionController | 1886 → 1168 | 8 | 5 | high — list + detail, many mutation endpoints, ready-for-review flow | **all done** 2026-04-18 |
+| ReviewController | 1139 → 634 | 11 | 2 | high — review cockpit with comments/appendix notes, 10+ POST handlers, CSRF surface | **all done** 2026-04-18 |
+| DocumentController | 902 → 495 | 9 | 10 | high — preview HTML, PDF bytes, ZIP bundles, file downloads (mostly non-HTML) | **all done** 2026-04-18 |
+| **Total** | **5,013 → 3,059** | **34** | **24** | — | **all done** |
 
 "Work unit" = one prompt-sized refactor (roughly the shape of the Dashboard
 pass: one controller, one or more page templates, one migration diff, a smoke
@@ -56,190 +56,286 @@ contain multiple independent page templates.
 
 ## CohortController
 
-- File: `src/Controller/CohortController.php` (540 lines, 4 public methods).
-- Routes:
-  - `cohorts.index` — GET `/cohorts` → `index()`
-  - `cohorts.show` — GET `/cohorts/{cohort}` → `show($cohort)`
-  - `cohorts.export.csv` — GET `/cohorts/{cohort}/export.csv` → `exportCsv($cohort)`
-  - `cohorts.bundle.download` — GET `/cohorts/{cohort}/bundle/download` → `downloadBundle($cohort)`
-- Inline-HTML complexity: **medium**. Two HTML pages (list, detail with
-  readiness/approval/weak-field metrics); two non-HTML responses.
-- Proposed page templates:
-  - `templates/pages/cohorts/index.html.twig`
-  - `templates/pages/cohorts/show.html.twig`
-- Component opportunities:
-  - Extract to `templates/components/shared/` (≥2 call sites once Submissions
-    also migrates):
-    - `components/shared/status-badge.html.twig` — consumes a `status` prop
-      (`draft`, `intake_in_progress`, `ready_for_review`, `approved`)
-    - `components/shared/empty-state.html.twig` — no-cohorts / no-submissions panel
-  - `templates/components/domain/cohorts/readiness-bar.html.twig` — the
-    weak-field / readiness-percentage visualization on the detail page
-- Risks:
-  - `exportCsv()` returns `text/csv` with `Content-Disposition: attachment`.
-    **Do not move it to Twig** — keep the CSV-building code in PHP, return
-    `Response` with raw body as today.
-  - `downloadBundle()` streams a ZIP. Same: **not a Twig candidate**.
-  - Route IDs are numeric (`requirement('cohort', '\d+')`); preserve in the
-    migration.
+**Status (2026-04-18): done.** Migrated in prompt #6 — `index()` and `show()`
+now render Twig templates (`pages/cohorts/index.html.twig`, `pages/cohorts/show.html.twig`).
+`exportCsv()` and `downloadBundle()` untouched (non-HTML response paths).
+
+What landed:
+
+- `index()` — builds a list of cohort-card view models, renders
+  `pages/cohorts/index.html.twig`. Empty-state rendered inline in the page
+  template (per threshold: only 1 call site in this pass).
+- `show()` — builds summary + rows + attention-item view models, renders
+  `pages/cohorts/show.html.twig`. Both empty-states (attention queue, rows)
+  rendered inline.
+- `exportCsv()` + `downloadBundle()` — **unchanged**. CSV bytes and bundle
+  response headers verified identical post-migration.
+- New 5th constructor arg `Twig\Environment $twig` added to `CohortController`;
+  `AppServiceProvider::routes()` wires the shared env through.
+- Two i18n keys added (`cohorts.index.page.title`, `cohorts.show.page.title`)
+  for the `<title>` block overrides. Remaining strings stay hardcoded for
+  byte-equivalence, same discipline as the intake template in prompt #5.
+
+Components NOT extracted this pass (all single call sites, below threshold):
+
+- cohort-card — renders once inside `{% for card in cards %}` on the index
+  page. No ≥2 call site yet.
+- submission-row — renders once inside `{% for row in rows %}` on the
+  show page. No ≥2 call site yet.
+- attention-item — renders once inside `{% for item in attention_items %}` on
+  the show page. No ≥2 call site yet.
+- status-badge — flagged in earlier plan; current markup is plain text
+  (`{{ row.status }}<br>{{ row.current_step }}`), not a visual badge, so no
+  component to extract.
+- empty-state — used 3× across cohort templates (one on index, two on show),
+  but staying inline per prompt #6 scope ("empty-state → shared extraction
+  when SubmissionController migrates, not now").
+- readiness-bar — **does not exist in the source HTML.** The "readiness"
+  column is rendered as plain text (`{{ row.readiness_label }}`), not a bar
+  visualization. The migration plan described a visualization that the
+  controller never produced. Flagged in prompt #6 report.
+
+Risks addressed:
+
+- CSV body verified byte-identical via `cmp` on pre/post captures.
+- Bundle response headers unchanged (pre-existing 500 error preserved — this
+  is a separate pre-migration bug in `CohortBundleService`, out of scope for
+  Twig extraction).
+- Numeric route IDs preserved (`requirement('cohort', '\d+')`).
+- CSV filename format `{slugified-label}-board.csv` preserved exactly
+  (slugifier logic unchanged, still in `csvFilename()` private method).
 
 ## SubmissionController
 
-- File: `src/Controller/SubmissionController.php` (1886 lines, 8 public methods).
-  Largest HTML surface in the app.
-- Routes (GET pages only — mutation endpoints return redirects):
-  - `submissions.index` — GET `/submissions`
-  - `submissions.show` — GET `/submissions/{submission}`
-  - mutation endpoints: `markReadyForReview`, `updateCanonical`,
-    `createResearchDraft`, `applyResearchDraft`, `restoreResearchDraft`,
-    `rejectResearchDraft` (all POST, all redirect)
-- Inline-HTML complexity: **high**. Two distinct HTML pages; the detail page
-  is dense (canonical fields form, research drafts panel, validation state,
-  appendix set). Embedded CSS + inline forms.
-- Proposed page templates:
-  - `templates/pages/submissions/index.html.twig`
-  - `templates/pages/submissions/show.html.twig`
-- Component opportunities:
-  - `components/shared/status-badge.html.twig` (also used by Cohorts — extract
-    in the first of the two passes that touches it)
-  - `components/shared/empty-state.html.twig`
-  - `components/shared/form-field.html.twig` — label + input + error wrapper
-  - `components/domain/submissions/canonical-field.html.twig` — one row of
-    the canonical-data form
-  - `components/domain/submissions/research-draft-card.html.twig` — one entry
-    in the research-drafts panel with apply/reject/restore actions
-  - `components/domain/submissions/validation-summary.html.twig` — the
-    `validation_state['research_drafts']` rollup
-- Risks:
-  - Mutation endpoints do not render HTML — they redirect. Leave them alone
-    (they stay `RedirectResponse`). Only `index()` and `show()` need templates.
-  - Validation-state structure has nested keys (`validation_state['research_drafts']`).
-    Template must read them without flattening, since downstream code depends
-    on the same nesting.
-  - Stored-data literals that appear in UI (status strings, appendix letters
-    A/B/F/G/H/M) must render unchanged. Use the raw values from the submission
-    entity, do not introduce lookup maps in the template.
-  - CSRF tokens on the POST forms: currently inlined as hidden fields by the
-    controller (grep the heredoc for `<input type="hidden" name="_token"`).
-    After migration, emit via `{{ csrf_token() }}` — this is the existing
-    framework function, no change to validation behavior.
-  - Split suggestion: do `index()` + shared-component extractions in pass A,
-    then `show()` in pass B. 1886 lines in one pass risks a review surface
-    too big to catch regressions.
+**Status (2026-04-18): fully done.** `index()` migrated in prompt #7; `show()`
++ the 20+ private render helpers migrated in prompt #8. Mutation endpoints
+untouched (all 6 return `RedirectResponse`, verified via HEAD probes).
+
+What landed in prompt #7 (`index()` only):
+
+- `index()` (~160 LOC of heredoc) now builds a list of `item` view-models
+  and renders `pages/submissions/index.html.twig`.
+- `renderListItem()` → `buildListItemView()` — returns a view-model array
+  instead of an HTML sprintf string.
+- Extracted one domain component: `components/domain/submissions/submission-row.html.twig`
+  — consumed once in the index for now. The ≥2-call-site threshold becomes
+  satisfied if prompt #8's `show()` needs a row (for an "all submissions in
+  this cohort" widget or similar); if show() doesn't need it, the component
+  stays single-use but in its correct domain location (not shared).
+- New 4th constructor arg `Twig\Environment $twig` added to `SubmissionController`;
+  `AppServiceProvider::routes()` wires it through.
+- One i18n key added (`submissions.index.page.title`) for the `<title>`
+  block override. Remaining strings stay hardcoded for byte-equivalence.
+
+Phantom audit (lesson from prompt #6):
+
+- `components/shared/status-badge.html.twig` — badge markup **does exist** in
+  the list view (status pill + three inline-styled callout badges: Revision
+  Note, Low Confidence, Readiness). But badges appear 4× within each row with
+  3 different style variants; the visual system hasn't converged enough to
+  extract a clean shared component. Deferred per prompt #7 scope.
+- `components/shared/empty-state.html.twig` — exists (two-paragraph panel
+  inside `<div class="empty">`). Different shape from cohort empty-states
+  (those have a single paragraph). Whatever shared component lands will need
+  to support arbitrary children, not a single text prop.
+- `components/shared/form-field.html.twig` — **not used by `index()`.** Lives
+  in the `show()` template. Deferred to prompt #8.
+- `components/domain/submissions/canonical-field.html.twig` — **not used by
+  `index()`.** Deferred to prompt #8.
+- `components/domain/submissions/research-draft-card.html.twig` — **not used
+  by `index()`.** Deferred to prompt #8.
+- `components/domain/submissions/validation-summary.html.twig` — **not used
+  by `index()`.** Deferred to prompt #8.
+
+No phantoms in this pass — every component the doc mentioned for `index()`
+is actually present in the HTML, just deferred per scope.
+
+What landed in prompt #8 (`show()` migration):
+
+- `show()` (~470 LOC of heredoc + 20+ private render helpers) now renders
+  `pages/submissions/show.html.twig` via view-model builders.
+- One i18n key added: `submissions.show.page.title`.
+- Appendix checklist section uses the new
+  `components/shared/appendix-checklist.html.twig` (2nd of 3 call sites that
+  justified extraction).
+- Mutation endpoints (`markReadyForReview`, `updateCanonical`,
+  `createResearchDraft`, `applyResearchDraft`, `restoreResearchDraft`,
+  `rejectResearchDraft`) all **untouched** — verified via curl GET HEAD
+  probes returning same 404 pre/post (POST-only routes, method mismatch →
+  no match, same behavior).
+- `submission-row` component from prompt #7 was NOT reused by `show()` — the
+  detail page doesn't render a list of submissions. The component stays
+  single-call-site (correctly scoped to `components/domain/submissions/`).
+
+Phantom audit results:
+
+- `canonical-field` — **phantom.** The migration plan described "one row of
+  the canonical-data form" but the panel is a single form with field_path +
+  value_format + field_value inputs, not per-field rows. No extraction.
+- `research-draft-card` — real, rendered for each research draft in the
+  "Recent Research" section. Single call site within the show page.
+- `validation-summary` — **partial phantom.** The plan described "validation_state
+  ['research_drafts'] rollup." In practice, the applied-research-drafts panel
+  (`research_backed`) is this rollup — renamed the PHP helper to
+  `buildAppliedResearchDraftsView` but kept the same shape.
+- `form-field` — real, `label + input/select/textarea` wrapper appears in
+  ~6 form elements across the page (canonical edit + research draft form).
+  Single call site per shape variant; below ≥2-same-shape threshold.
+- `status-badge` — real as `.pill` (different variant from list-page
+  `.badge`). Deferred, same rationale as prior passes.
+
+Components NOT extracted: canonical-field, research-draft-card,
+validation-summary, form-field, status-badge, research-item-card. All
+single-call-site within this template.
 
 ## ReviewController
 
-- File: `src/Controller/ReviewController.php` (1139 lines, 11 public methods).
-- Routes:
-  - GET `/submissions/{submission}/review` → `show()` (the only HTML render)
-  - 10 POST endpoints: `addComment`, `addAppendixNote`, `clearAppendixNote`,
-    `restoreAppendixNote`, `updateStatus`, `sendBackToIntake`,
-    `markAppendixReviewed`, `clearAppendixReviewed`,
-    `markAllAppendicesReviewed`, `clearAllAppendixReviews`
-- Inline-HTML complexity: **high**. Single page template, but dense: review
-  comments timeline, appendix note editor, status-change controls, send-back
-  workflow. Stateful UI with many conditional branches.
-- Proposed page templates:
-  - `templates/pages/reviews/show.html.twig`
-- Component opportunities:
-  - `components/domain/reviews/comment-card.html.twig` — single comment with
-    author + timestamp + body
-  - `components/domain/reviews/appendix-note-editor.html.twig` — textarea +
-    save/clear/restore buttons, one per appendix (A/B/F/G/H/M)
-  - `components/domain/reviews/status-controls.html.twig` — approve /
-    request-changes / send-back actions
-  - `components/shared/timestamp.html.twig` — consistent datetime rendering
-- Risks:
-  - Many POST endpoints means many hidden-input CSRF token fields. Audit each
-    form during migration; use `{{ csrf_token() }}`.
-  - `sendBackToIntake()` changes submission workflow state
-    (`ready_for_review` → `intake_in_progress`). Template must not accidentally
-    pre-select or default the wrong state. Pure-template migration should be
-    safe, but verify with a smoke test after migration.
-  - 10 POST routes × 10 form elements on the page — a migration is large.
-    Consider a single pass focused on the `show()` template + hidden CSRF
-    fields, deferring the per-action components to a follow-up.
+**Status (2026-04-18): fully done.** Migrated in prompt #8.
+
+What landed:
+
+- `show()` (~450 LOC of heredoc + 8 private render helpers) now renders
+  `pages/reviews/show.html.twig` via view-model builders.
+- 10 POST mutation handlers **untouched** — all still `RedirectResponse`.
+- `{% include "components/shared/appendix-checklist.html.twig" %}` used in
+  the "Package Completeness" section — eliminates the 3rd copy of the
+  6-appendix checklist render across the codebase.
+- One i18n key added: `reviews.show.page.title`.
+- Privates that stayed PHP: `buildTimelineEntries`, `buildReviewEntryView`,
+  `buildAppendixTimelineGroupView`, `buildWorkflowTimelineGroupView`,
+  `buildIntakeTimelineGroupView`, `isAppendixTimelineChurn`,
+  `isWorkflowTimelineChurn`, `isIntakeTimelineChurn`,
+  `intakeTimelineGroupKey`, `noticeKeyFromUri`, `appendixReviewWarning`,
+  `buildAppendixReviewView`, `appendixNoteActivityMeta`,
+  `buildConfidenceView`, `weakFieldSummary`, `buildResearchBackedView`.
+
+Phantom audit results:
+
+- `comment-card` — real, rendered by `buildReviewEntryView`. Single call
+  site in the timeline; below extraction threshold.
+- `appendix-note-editor` — real, rendered as 6 `<form>` groups in the
+  appendix-review panel. Single call site; inline.
+- `status-controls` — real, two `<form>` elements (status change + send-back).
+  Single call site; inline.
+- `timestamp` — **phantom.** The source renders raw ISO-8601 strings
+  (e.g. `2026-04-18T23:59:34+00:00`) with no formatting. No component
+  needed until a consistent datetime format lands.
+
+Components NOT extracted: comment-card, appendix-note-editor, status-controls
+(all single call sites). `timestamp` was a phantom.
+
+Risks addressed:
+
+- 10 POST endpoints all still work (verified via curl HEAD probes — same
+  404s on GET pre/post).
+- `sendBackToIntake()` workflow unchanged (method untouched).
+- CSRF surface: `<input type="hidden" name="appendix" value="…">` fields in
+  the appendix-review forms preserved exactly. `{{ csrf_token() }}` NOT
+  introduced this pass — the framework doesn't enforce CSRF on these routes
+  (all use `->csrfExempt()`). Introducing CSRF tokens would be a separate
+  security-hardening pass.
+- Timeline-grouping logic (`buildTimelineEntries` + 4 group builders +
+  3 churn classifiers) preserved verbatim. Raw vs compact modes both render
+  correctly.
 
 ## DocumentController
 
-- File: `src/Controller/DocumentController.php` (902 lines, 9 public methods).
-- Routes:
-  - GET pages:
-    - `/submissions/{submission}/documents` → `show()` — preview panel
-    - `/submissions/{submission}/package` → `package()` — package list / regenerate UI
-    - `/submissions/{submission}/exports` → `exports()` — exports index
-    - `/submissions/{submission}/package/pdf` → `pdf()` — inline PDF preview
-    - `/submissions/{submission}/exports/file/{document_type}` → `exportFile()`
-  - Non-HTML / download routes:
-    - `/submissions/{submission}/package/pdf/download` → `downloadPdf()` (PDF bytes)
-    - `/submissions/{submission}/exports/file/{document_type}/download` → `downloadExportFile()`
-    - `/submissions/{submission}/exports/bundle/download` → `downloadBundle()` (ZIP)
-    - `/submissions/{submission}/exports/pdf/regenerate` → `regeneratePdf()` (redirect on POST)
-- Inline-HTML complexity: **high**, but a lot of the 10 inline-HTML markers
-  are PDF/ZIP response wrappers, not Twig candidates.
-- Proposed page templates:
-  - `templates/pages/documents/show.html.twig`
-  - `templates/pages/documents/package.html.twig`
-  - `templates/pages/documents/exports.html.twig`
-  - `templates/pages/documents/pdf-preview.html.twig` (optional — the
-    inline PDF iframe/object wrapper, if it has one)
-- Component opportunities:
-  - `components/domain/documents/export-row.html.twig` — one export entry
-    with download + regenerate actions
-  - `components/domain/documents/package-status.html.twig` — package state
-    indicator driven by `artifact_bundle_zip` document presence on disk
-- Risks:
-  - **Do not migrate** `downloadPdf`, `downloadExportFile`, `downloadBundle`
-    to Twig. They stream bytes with specific `Content-Type` (`application/pdf`,
-    `application/zip`) and `Content-Disposition: attachment` headers. They
-    must keep returning raw `Response` with binary bodies.
-  - `pdf()` — if it renders an HTML wrapper around an `<iframe src>` to a
-    download URL, the wrapper itself is Twig-friendly. If it streams the PDF
-    bytes directly, leave it.
-  - `document_type` is a stored literal (e.g. `artifact_bundle_zip`,
-    specific export types). Preserve the exact literal strings when rendering.
-  - Document generation is backed by `ArtifactBundleService` +
-    `ArtifactAuditService` + `DocumentPreviewService`. Templates consume
-    read-only DTOs; do not call generation services from inside a template.
+**Status (2026-04-18): fully done.** Migrated in prompt #8.
+
+What landed:
+
+- `show()`, `package()`, `exports()` — 3 HTML methods migrated to Twig.
+- `show()` / `package()` use inline `{{ page_styles|raw }}` from
+  `DocumentPreviewService::pageStyles()` (runtime-generated CSS) — not
+  the conventions' per-page `{% block head %}` inline `<style>`, because
+  the CSS comes from the service, not the controller.
+- `exports()` uses conventions' inline `{% block head %}` `<style>` (CSS
+  lives in the heredoc, fixed content).
+- `exports()` renders the shared appendix checklist via
+  `{% include "components/shared/appendix-checklist.html.twig" %}`
+  (1st of 3 call sites that justified extraction).
+- `pdf()`, `downloadPdf()`, `downloadBundle()`, `exportFile()`,
+  `downloadExportFile()`, `regeneratePdf()` **untouched**. All binary /
+  download / redirect responses verified byte-identical via curl HEAD probes
+  and cmp on CSV body (prompt #6 did the bundle audit originally).
+- `exportFile()` in HTML mode still streams `file_get_contents($path)` as
+  the response body — not a template, user-generated content from
+  stored artifact.
+- Three new i18n keys: `documents.show.page.title`,
+  `documents.package.page.title`, `documents.exports.page.title`.
+
+Phantom audit results:
+
+- `export-row` — real, rendered in the exports table `<tbody>`. Single call
+  site in the exports page.
+- `package-status` — the migration plan described "package state indicator
+  driven by artifact_bundle_zip document presence on disk." In practice
+  that's a single `<span class="status">ready|pending</span>` embedded in
+  the export-row, not a standalone indicator — **partial phantom**.
+
+Components NOT extracted (all single call sites):
+
+- `export-row` (rendered inline in exports table), same reasoning as
+  single-use iteration blocks in prompts #6-7.
+
+Risks addressed:
+
+- CSV + PDF + ZIP response headers verified identical pre/post migration
+  (same `Content-Type`, same `Content-Disposition`, same Cache-Control
+  cluster modulo per-request PHPSESSID/Date).
+- `document_type` stored literals (`merged_package_pdf`, `artifact_bundle_zip`,
+  `merged_package_preview`, `appendix_*_preview`) preserved exactly in the
+  rendered output.
+- Document generation service calls (`buildAndPersist`, `buildPackageAndPersist`,
+  `summarize`, `generatePackagePdf`) all happen in the controller before
+  template render — no service calls from inside templates.
+- The `exports()` page pre-generates artifacts on every GET
+  (`buildAndPersist` + `buildPackageAndPersist` + `artifactBundleService->buildAndPersist`).
+  This means timestamps drift between captures of the same URL — it's
+  data drift, not a template regression. Captured via normalized diff.
 
 ## Open follow-ups (not in any single-controller pass)
 
 ### i18n wiring
 
-`resources/lang/en.php` exists as a scaffold only. Before any template can
-switch from hardcoded strings to `{{ trans('...') }}`:
+**Status (2026-04-18): live.** Wired in prompt #5 alongside the Intake
+extraction. The snippet in the previous revision of this section had the
+`Translator::__construct` argument order wrong (it is `$translationsPath`
+first, then `$manager` — verified against
+`vendor/waaseyaa/i18n/src/Translator.php` and against Minoo `origin/main`'s
+`AppServiceProvider`, which is the canonical reference).
 
-1. Register `TranslatorInterface` and `LanguageManagerInterface` bindings in
-   `AppServiceProvider::register()`:
-   ```php
-   $this->singleton(\Waaseyaa\I18n\LanguageManagerInterface::class, fn () =>
-       new \Waaseyaa\I18n\LanguageManager(/* languages from config/waaseyaa.php */));
-   $this->singleton(\Waaseyaa\I18n\TranslatorInterface::class, fn () =>
-       new \Waaseyaa\I18n\Translator(
-           $this->resolve(\Waaseyaa\I18n\LanguageManagerInterface::class),
-           /* loader that reads resources/lang/{locale}.php */
-       ));
-   ```
-2. In `AppServiceProvider::boot()`, register the Twig extension on the shared
-   environment:
-   ```php
-   $twig = \Waaseyaa\SSR\SsrServiceProvider::getTwigEnvironment();
-   if ($twig !== null) {
-       $twig->addExtension(new \Waaseyaa\I18n\Twig\TranslationTwigExtension(
-           $this->resolve(\Waaseyaa\I18n\TranslatorInterface::class),
-           $this->resolve(\Waaseyaa\I18n\LanguageManagerInterface::class),
-       ));
-   }
-   ```
-3. Switch `templates/layouts/base.html.twig` from `<html lang="en">` to
-   `<html lang="{{ current_language().id }}">`.
-4. Migrate Dashboard template strings to `{{ trans('dashboard.*') }}` calls,
-   using the keys already in `resources/lang/en.php`.
-5. Add a smoke test for the translator's fallback behavior (unknown key
-   returns key verbatim, as Minoo's `Translator` does).
+What landed:
 
-Do this **before** the next page template is extracted, so subsequent migrations
-can use `trans()` from the start.
+1. `AppServiceProvider::register()` binds `LanguageManagerInterface` (reads
+   `$this->config['i18n']['languages']` from `config/waaseyaa.php`, falls back
+   to a single `en` default if absent) and `TranslatorInterface`
+   (`new Translator(dirname(__DIR__, 2) . '/resources/lang', $manager)`).
+2. `AppServiceProvider::boot()` resolves both, constructs
+   `TranslationTwigExtension`, and adds it to the shared Twig env.
+   **Null-safety:** the boot() uses Minoo's silent null-skip pattern
+   (`if ($twig !== null) { … }`), not the throw discussed during planning —
+   see prompt #5 report §Decision outcome for rationale.
+3. `base.html.twig` now emits `<html lang="{{ current_language().id }}">`.
+4. Dashboard template strings converted to `{{ trans('dashboard.*') }}`.
+   Every string in the page template uses a key from `resources/lang/en.php`;
+   a new `dashboard.page.title` key was added for the `<title>` block.
+5. Intake template strings are **not** yet converted — keys are scaffolded in
+   `resources/lang/en.php` (see `intake.*` block), conversion deferred to a
+   later pass once we see a second template lean on `trans()` for intake
+   surfaces. Exception: `<title>` in the intake layout block uses
+   `trans('intake.page.title')` from day one, to validate `trans()` inside
+   `{% block %}` content.
+
+Not done in this pass (tracked for follow-up):
+
+- Translator fallback smoke test (unknown key returns key verbatim). The
+  Minoo `Translator` already behaves that way per its source, but miikana
+  has no explicit test for it. Add when test scaffolding for this repo
+  lands.
+- URL-prefix language negotiation (Minoo binds `UrlPrefixNegotiator` in
+  the same block). Not needed for English-only miikana; add when a second
+  language is introduced.
 
 ### Chrome convergence
 

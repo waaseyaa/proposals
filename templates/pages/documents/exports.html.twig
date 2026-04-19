@@ -1,0 +1,296 @@
+{% extends "layouts/base.html.twig" %}
+{% block title %}{{ trans('documents.exports.page.title') }}{% endblock %}
+{% block head %}  <style>
+    :root {
+      --ink: #171411;
+      --paper: #fffdfa;
+      --sand: #f4ebde;
+      --line: #dbcbb7;
+      --moss: #315845;
+      --rust: #ba5a2d;
+      --muted: #6f665c;
+      --card: #f7efe3;
+      --success: #21663a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f8f3eb 0%, #efe5d8 100%);
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+    a { color: var(--moss); }
+    .hero, .card {
+      background: rgba(255, 253, 250, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
+    }
+    .hero { margin-bottom: 24px; }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      color: var(--rust);
+      font-weight: 700;
+    }
+    h1 {
+      margin: 8px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      letter-spacing: -0.04em;
+    }
+    p { line-height: 1.8; color: var(--muted); }
+    .nav {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .nav a {
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      text-decoration: none;
+      background: rgba(255,255,255,0.7);
+    }
+    .notice {
+      margin: 16px 0 0;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(33, 102, 58, 0.18);
+      background: rgba(33, 102, 58, 0.08);
+      color: var(--success);
+      font-weight: 700;
+    }
+    .review-card {
+      margin-bottom: 24px;
+    }
+    .review-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .review-metric {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffefd;
+    }
+    .review-metric strong {
+      display: block;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .review-note {
+      margin-top: 14px;
+      border-left: 4px solid var(--rust);
+      padding-left: 14px;
+    }
+    .readiness-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      color: var(--muted);
+    }
+    .checklist {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .checklist-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fffefd;
+    }
+    .checklist-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .note-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .note-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fffefd;
+    }
+    .note-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .note-meta {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+    .warning {
+      margin: 18px 0 0;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(186, 90, 45, 0.28);
+      background: rgba(186, 90, 45, 0.08);
+      color: var(--ink);
+    }
+    .warning strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--rust);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+    th, td {
+      padding: 12px 10px;
+      border-top: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      background: var(--card);
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(49, 88, 69, 0.08);
+      color: var(--moss);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .actions a {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #fff;
+      text-decoration: none;
+      font-size: 0.88rem;
+    }
+    code {
+      background: #f3ede5;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+    @media (max-width: 860px) {
+      .checklist { grid-template-columns: 1fr 1fr; }
+      .note-grid { grid-template-columns: 1fr; }
+      .review-grid { grid-template-columns: 1fr 1fr; }
+      table, thead, tbody, tr, th, td { display: block; }
+      thead { display: none; }
+      td { padding-left: 0; }
+      tr + tr td:first-child { border-top: 1px solid var(--line); }
+    }
+  </style>
+{% endblock %}
+{% block body %}  <main>
+    <section class="hero">
+      <div class="eyebrow">Exports</div>
+      <h1>{{ title }}</h1>
+      <p>This surface shows the current export artifacts for the submission, including generated appendix HTML, merged package state, and the latest PDF output. Use it to open, download, or regenerate deliverables without hunting for direct URLs.</p>
+      <div class="nav">
+        <a href="/submissions">Back to submissions</a>
+        <a href="/submissions/{{ submission_id }}">Structured data</a>
+        <a href="/submissions/{{ submission_id }}/documents">Appendix documents</a>
+        <a href="/submissions/{{ submission_id }}/package">Merged package</a>
+        <a href="/submissions/{{ submission_id }}/package/pdf">Open PDF</a>
+        <a href="/submissions/{{ submission_id }}/exports/bundle/download">Download bundle</a>
+      </div>
+      {% if notice_regenerated %}<div class="notice">PDF regenerated from the current merged package.</div>{% endif %}
+    </section>
+    <section class="card review-card">
+      <div class="eyebrow">Review State</div>
+      <p>The export path now reflects staff workflow state, so reviewers can see whether this package is still in revisions or already moving toward approval and submission.</p>
+      <div class="review-grid">
+        <div class="review-metric"><strong>Status</strong>{{ review.status }}</div>
+        <div class="review-metric"><strong>Current Step</strong>{{ review.current_step }}</div>
+        <div class="review-metric"><strong>Review Actions</strong>{{ review.review_count }}</div>
+        <div class="review-metric"><strong>Appendices Reviewed</strong>{{ review.reviewed_appendices }}</div>
+        <div class="review-metric"><strong>Latest Activity</strong>{{ review.latest_created_at }}</div>
+      </div>
+      <div class="readiness-strip"><span>Readiness: {{ readiness.label }}</span><span>Unresolved: {{ readiness.unresolved_count }}</span><span>Low confidence: {{ readiness.weak_count }}</span></div>
+      <div class="readiness-strip"><span>Artifacts ready: {{ artifact_audit.ready_count }}/{{ artifact_audit.total_count }}</span><span>Missing: {{ artifact_audit.missing_count }}</span></div>
+{%- if artifact_audit.missing is not empty -%}
+<div class="warning"><strong>Artifact audit</strong><div>{{ artifact_audit.missing|join(' · ') }}</div></div>
+{%- endif -%}
+      {% include "components/shared/appendix-checklist.html.twig" with { completion_state: completion_state } %}
+      <div class="note-grid">
+{%- for note in appendix_notes -%}
+<div class="note-item"><strong>{{ note.label }}</strong><div>{% if note.body_is_raw %}{{ note.body|raw }}{% else %}{{ note.body }}{% endif %}</div><div class="note-meta">{{ note.meta }}</div></div>
+{%- endfor -%}
+</div>
+{%- if research_backed is empty -%}
+<div class="warning"><strong>No active research-backed updates</strong><div>No currently applied field values were promoted from research drafts.</div></div>
+{%- else -%}
+<div class="note-grid">
+{%- for item in research_backed -%}
+<div class="note-item"><strong>{{ item.target_path }}</strong><div>{{ item.source_query }}</div><div class="note-meta"><span>provider: {{ item.source_provider }}</span> · <span>quality: {{ item.draft_quality }}</span> · <span>applied: {{ item.applied_at }}</span> · <a href="/submissions/{{ item.submission_id }}?edit_path={{ item.target_path_encoded }}">Inspect field</a></div></div>
+{%- endfor -%}
+</div>
+{%- endif -%}
+      <div class="review-note"><strong>Latest Note</strong><div>{{ review.latest_comment }}</div></div>
+{%- if weak_fields is not empty -%}
+<div class="warning"><strong>Low-confidence fields are still present in this package.</strong><div>{{ weak_fields|join(' · ') }}</div></div>
+{%- endif -%}
+      <p><a href="/submissions/{{ submission_id }}/review">Open full review cockpit</a></p>
+    </section>
+    <section class="card">
+      <div class="eyebrow">Artifacts</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Artifact</th>
+            <th>Status</th>
+            <th>Version</th>
+            <th>Generated</th>
+            <th>Size</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+{%- for row in rows -%}
+<tr><td><strong>{{ row.label }}</strong><br><code>{{ row.document_type }}</code></td><td><span class="status">{{ row.ready ? 'ready' : 'pending' }}</span></td><td>{{ row.version != '' ? row.version : '&nbsp;'|raw }}</td><td>{{ row.generated != '' ? row.generated : '&nbsp;'|raw }}</td><td>{{ row.size }}</td><td><div class="actions">{%- for action in row.actions -%}<a href="{{ action.href }}">{{ action.label }}</a>{%- endfor -%}</div></td></tr>
+{%- endfor -%}
+</tbody>
+      </table>
+    </section>
+  </main>
+{% endblock %}

@@ -37,13 +37,46 @@ use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\Entity\EntityTypeManagerInterface;
 use Waaseyaa\Foundation\ServiceProvider\ServiceProvider;
 use Waaseyaa\Foundation\Sovereignty\SovereigntyProfile;
+use Waaseyaa\I18n\Language;
+use Waaseyaa\I18n\LanguageManager;
+use Waaseyaa\I18n\LanguageManagerInterface;
+use Waaseyaa\I18n\Translator;
+use Waaseyaa\I18n\TranslatorInterface;
+use Waaseyaa\I18n\Twig\TranslationTwigExtension;
 use Waaseyaa\Routing\RouteBuilder;
 use Waaseyaa\Routing\WaaseyaaRouter;
+use Waaseyaa\SSR\SsrServiceProvider;
 
 final class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->singleton(LanguageManagerInterface::class, function (): LanguageManagerInterface {
+            $configured = (array) ($this->config['i18n']['languages'] ?? []);
+            $languages = [];
+            foreach ($configured as $entry) {
+                if (!is_array($entry) || !isset($entry['id'], $entry['label'])) {
+                    continue;
+                }
+                $languages[] = new Language(
+                    (string) $entry['id'],
+                    (string) $entry['label'],
+                    isDefault: (bool) ($entry['is_default'] ?? false),
+                );
+            }
+            if ($languages === []) {
+                $languages[] = new Language('en', 'English', isDefault: true);
+            }
+            return new LanguageManager($languages);
+        });
+
+        $this->singleton(TranslatorInterface::class, function (): TranslatorInterface {
+            $langPath = dirname(__DIR__, 2) . '/resources/lang';
+            /** @var LanguageManagerInterface $manager */
+            $manager = $this->resolve(LanguageManagerInterface::class);
+            return new Translator($langPath, $manager);
+        });
+
         $this->singleton(ProposalIntrospectionProvider::class, static fn() => new ProposalIntrospectionProvider());
         $this->singleton(EntityTypeManagerInterface::class, fn () => $this->resolve(EntityTypeManager::class));
         $this->singleton(ProposalSchemaBootstrap::class, fn () => new ProposalSchemaBootstrap(
@@ -148,9 +181,22 @@ final class AppServiceProvider extends ServiceProvider
         });
     }
 
+    public function boot(): void
+    {
+        /** @var TranslatorInterface $translator */
+        $translator = $this->resolve(TranslatorInterface::class);
+        /** @var LanguageManagerInterface $manager */
+        $manager = $this->resolve(LanguageManagerInterface::class);
+
+        $twig = SsrServiceProvider::getTwigEnvironment();
+        if ($twig !== null) {
+            $twig->addExtension(new TranslationTwigExtension($translator, $manager));
+        }
+    }
+
     public function routes(WaaseyaaRouter $router, ?\Waaseyaa\Entity\EntityTypeManager $entityTypeManager = null): void
     {
-        $twig = \Waaseyaa\SSR\SsrServiceProvider::getTwigEnvironment();
+        $twig = SsrServiceProvider::getTwigEnvironment();
         if ($twig === null) {
             throw new \RuntimeException('Twig environment not available; SsrServiceProvider::boot() must run before routes are registered.');
         }
@@ -164,6 +210,7 @@ final class AppServiceProvider extends ServiceProvider
             $this->resolve(EntityTypeManagerInterface::class),
             $this->resolve(ArtifactAuditService::class),
             $this->resolve(ProposalReviewService::class),
+            $twig,
         );
         $documents = new DocumentController(
             $this->resolve(EntityTypeManagerInterface::class),
@@ -172,18 +219,22 @@ final class AppServiceProvider extends ServiceProvider
             $this->resolve(ArtifactBundleService::class),
             $this->resolve(ArtifactAuditService::class),
             $this->resolve(ProposalReviewService::class),
+            $twig,
         );
         $intake = new IntakeController(
             $this->resolve(DeterministicIntakeService::class),
+            $twig,
         );
         $cohorts = new CohortController(
             $this->resolve(CohortOverviewService::class),
             $this->resolve(CohortBundleService::class),
             $this->resolve(ArtifactAuditService::class),
             $this->resolve(ProposalReviewService::class),
+            $twig,
         );
         $reviews = new ReviewController(
             $this->resolve(ProposalReviewService::class),
+            $twig,
         );
 
         $router->addRoute(

@@ -1,0 +1,290 @@
+{% extends "layouts/base.html.twig" %}
+{% block title %}{{ trans('intake.page.title') }}{% endblock %}
+{% block head %}  <style>
+    :root {
+      --ink: #171411;
+      --paper: #fffdfa;
+      --sand: #f4ebde;
+      --line: #dbcbb7;
+      --moss: #315845;
+      --rust: #ba5a2d;
+      --muted: #6f665c;
+      --card: #f7efe3;
+      --assistant: #eef5f0;
+      --user: #fff7ee;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f8f3eb 0%, #efe5d8 100%);
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+    a { color: var(--moss); }
+    .hero, .card {
+      background: rgba(255, 253, 250, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
+    }
+    .hero { margin-bottom: 24px; }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      color: var(--rust);
+      font-weight: 700;
+    }
+    h1 {
+      margin: 8px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      letter-spacing: -0.04em;
+    }
+    p, li { line-height: 1.8; color: var(--muted); }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+    }
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+    .nav {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .nav a {
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      text-decoration: none;
+      background: rgba(255,255,255,0.7);
+    }
+    .turn {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .turn.user { background: var(--user); }
+    .turn.assistant { background: var(--assistant); }
+    .turn-meta {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .patches {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .patch-list {
+      display: grid;
+      gap: 10px;
+    }
+    .patch-item {
+      border: 1px solid rgba(49, 88, 69, 0.14);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.55);
+    }
+    .patch-item code {
+      font-size: 0.84rem;
+    }
+    .patch-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+      font-size: 0.84rem;
+    }
+    .patch-note {
+      margin-top: 6px;
+      color: var(--ink);
+    }
+    .advisories {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .advisory-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .advisory-item {
+      border: 1px solid rgba(186, 90, 45, 0.16);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.52);
+    }
+    .confidence {
+      font-weight: 700;
+      color: var(--moss);
+    }
+    .follow-up {
+      color: var(--rust);
+      font-weight: 700;
+    }
+    form {
+      display: grid;
+      gap: 12px;
+    }
+    textarea, button {
+      font: inherit;
+    }
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      resize: vertical;
+    }
+    button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--moss);
+      color: #fff;
+      cursor: pointer;
+      justify-self: start;
+    }
+    code {
+      background: #f3ede5;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+    .notice, .empty {
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .question-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      background: #fffefd;
+    }
+    .question-card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+    .priority {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--rust);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 700;
+    }
+    .notice {
+      border: 1px solid rgba(33, 102, 58, 0.18);
+      background: rgba(33, 102, 58, 0.08);
+      color: #21663a;
+      font-weight: 700;
+      margin-top: 16px;
+    }
+    .empty {
+      border: 1px dashed var(--line);
+      background: #fffaf5;
+      color: var(--muted);
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+{% endblock %}
+{% block body %}  <main>
+    <section class="hero">
+      <div class="eyebrow">Conversational Intake</div>
+      <h1>{{ submission_title }}</h1>
+      <p>This is the bounded intake loop: every turn is stored, structured patches are applied into <code>canonical_data</code>, and unresolved fields stay visible instead of disappearing into chat history.</p>
+      <p><strong>Provider mode:</strong> <code>{{ provider_mode }}</code></p>
+      <div class="nav">
+        <a href="/submissions">Back to submissions</a>
+        <a href="/submissions/{{ submission_id }}">Structured data</a>
+        <a href="/submissions/{{ submission_id }}/documents">Appendix documents</a>
+        <a href="/submissions/{{ submission_id }}/review">Review</a>
+      </div>
+      {% if notice == 'updated' %}<div class="notice">Intake turn stored and structured patches applied.</div>{% elseif notice == 'error' %}<div class="notice">Unable to apply the intake turn. Check the message and try again.</div>{% endif %}
+    </section>
+    <section class="layout">
+      <div class="stack">
+        <section class="card">
+          <div class="eyebrow">Transcript</div>
+          {%- if transcript is empty -%}
+<div class="empty">No intake turns recorded yet.</div>
+          {%- else -%}
+            {%- for turn in transcript -%}
+              {%- include "components/domain/intake/transcript-turn.html.twig" with { turn: turn } -%}
+            {%- endfor -%}
+          {%- endif -%}
+<section class="card"><div class="eyebrow">Research Log</div>
+          {%- if research_log.raw_empty -%}
+<div class="empty">No research artifacts captured yet.</div>
+          {%- else -%}
+<div class="patch-list">
+            {%- for item in research_log.items -%}
+<div class="patch-item"><code>{{ item.header }}</code><div class="patch-note">{{ item.summary }}</div><div class="patch-meta"><span class="confidence">{{ item.provider }}</span></div>
+              {%- if item.citations is not empty -%}
+<div class="advisories"><strong>Citations</strong>
+                {%- for citation in item.citations -%}
+                  {%- if citation.is_internal -%}
+<div><strong>{{ citation.title }}</strong><div><code>{{ citation.url }}</code></div></div>
+                  {%- else -%}
+<div><a href="{{ citation.url }}" target="_blank" rel="noreferrer">{{ citation.title }}</a></div>
+                  {%- endif -%}
+                {%- endfor -%}
+</div>
+              {%- endif -%}
+</div>
+            {%- endfor -%}
+</div>
+          {%- endif -%}
+</section>
+        </section>
+      </div>
+      <div class="stack">
+        <section class="card">
+          <div class="eyebrow">New Turn</div>
+          {% if next_question is null %}<div class="empty">No queued next question. The current question plan is satisfied.</div>{% else %}<div class="question-card"><strong>Next Question</strong><div>{{ next_question.question }}</div><p><code>{{ next_question.example }}</code></p><span class="priority">{{ next_question.priority }} priority</span></div>{% endif %}
+          <p>Use direct field lines like <code>business.operations.launch_timeline: Within 10 days</code> or short statements like <code>customers include Band office, local families</code>.</p>
+          <form method="post" action="/submissions/{{ submission_id }}/intake">
+            <textarea name="message" placeholder="Describe the business, answer a follow-up question, or send direct field lines."></textarea>
+            <button type="submit">Apply Intake Turn</button>
+          </form>
+        </section>
+        <section class="card">
+          <div class="eyebrow">Unresolved Core Fields</div>
+          {% if unresolved_items is empty %}<div class="empty">No unresolved core intake fields.</div>{% else %}<ul>{% for item in unresolved_items %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+        </section>
+      </div>
+    </section>
+  </main>
+{% endblock %}

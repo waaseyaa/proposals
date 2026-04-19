@@ -1,0 +1,19 @@
+{% extends "layouts/base.html.twig" %}
+{% block title %}{{ trans('documents.package.page.title') }}{% endblock %}
+{% block head %}  <style>{{ page_styles|raw }}</style>
+{% endblock %}
+{% block body %}  <main>
+    <div class="hero">
+      <div class="eyebrow">Merged Package</div>
+      <h1>{{ title }}</h1>
+      <p>This is the printable package bundle: cover sheet plus Appendices A, B, F, G, H, and M in submission order.</p>
+      <div class="nav">
+        <a href="/submissions">Back to submissions</a>
+        <a href="/submissions/{{ submission_id }}/documents">Appendix documents</a>
+        <a href="#" onclick="window.print(); return false;">Print / Save PDF</a>
+        <a href="/submissions/{{ submission_id }}/package/pdf">Generate PDF</a>
+      </div>
+    </div>
+    <div class="stack">{{ package_html|raw }}</div>
+  </main>
+{% endblock %}

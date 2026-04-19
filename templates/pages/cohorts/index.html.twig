@@ -1,0 +1,100 @@
+{% extends "layouts/base.html.twig" %}
+{% block title %}{{ trans('cohorts.index.page.title') }}{% endblock %}
+{% block head %}  <style>
+    :root {
+      --ink: #171411;
+      --paper: #fffdfa;
+      --line: #dbccb8;
+      --moss: #315845;
+      --rust: #ba5a2d;
+      --muted: #6f665c;
+    }
+    body {
+      margin: 0;
+      font-family: Georgia, serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f8f3eb 0%, #efe5d8 100%);
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+    a { color: var(--moss); }
+    .hero, .card {
+      background: rgba(255, 253, 250, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
+    }
+    .hero { margin-bottom: 24px; }
+    .grid, .metrics {
+      display: grid;
+      gap: 18px;
+    }
+    .grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
+    .metric {
+      background: #fffaf2;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .metric strong {
+      display: block;
+      font-size: 1.5rem;
+      color: var(--moss);
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      color: var(--rust);
+      font-weight: 700;
+    }
+    h1 {
+      margin: 8px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      letter-spacing: -0.04em;
+    }
+    h2 {
+      margin: 10px 0 8px;
+      font-size: 1.4rem;
+    }
+    p { line-height: 1.8; color: var(--muted); }
+    .meta, .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .meta { font-size: 0.92rem; color: var(--muted); }
+    .empty {
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      padding: 20px;
+      background: #fffaf5;
+    }
+    @media (max-width: 760px) {
+      .metrics { grid-template-columns: 1fr; }
+    }
+  </style>
+{% endblock %}
+{% block body %}  <main>
+    <section class="hero">
+      <div class="eyebrow">Cohort Review Board</div>
+      <h1>Staff can now see proposal progress at cohort level.</h1>
+      <p>This surface rolls up readiness, weak-field risk, appendix signoff, approval state, and export state across all submissions attached to a cohort.</p>
+      <p><a href="/">Dashboard</a> · <a href="/submissions">Submissions</a></p>
+    </section>
+    <section class="grid">
+{%- if cards is empty -%}
+<div class="empty">No cohorts exist yet. Run <code>php bin/waaseyaa northops:seed</code> to seed the pilot cohort.</div>
+{%- else -%}
+{%- for card in cards -%}
+<article class="card"><div class="eyebrow">Pilot Cohort</div><h2><a href="{{ card.url }}">{{ card.label }}</a></h2><p>Status: {{ card.status }} · Capacity: {{ card.capacity }} · Window: {{ card.starts_at }} to {{ card.ends_at }}</p><div class="metrics"><div class="metric"><strong>{{ card.total }}</strong><span>Submissions</span></div><div class="metric"><strong>{{ card.ready_plus_approved }}</strong><span>Ready / approved</span></div><div class="metric"><strong>{{ card.reviewed_appendices }}/{{ card.appendix_total }}</strong><span>Appendix signoff</span></div></div><p class="meta"><span>Weak fields open: {{ card.weak_fields }}</span><span><a href="{{ card.url }}">Open cohort board</a></span></p></article>
+{%- endfor -%}
+{%- endif -%}
+</section>
+  </main>
+{% endblock %}

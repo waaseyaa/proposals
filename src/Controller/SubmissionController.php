@@ -9,6 +9,7 @@ use App\Domain\Review\ProposalReviewService;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Twig\Environment;
 use Waaseyaa\Entity\EntityInterface;
 use Waaseyaa\Entity\EntityTypeManagerInterface;
 
@@ -18,6 +19,7 @@ final class SubmissionController
         private readonly EntityTypeManagerInterface $entityTypeManager,
         private readonly ArtifactAuditService $artifactAuditService,
         private readonly ProposalReviewService $reviewService,
+        private readonly Environment $twig,
     ) {}
 
     public function index(): Response
@@ -28,156 +30,14 @@ final class SubmissionController
             ->execute();
         $submissions = $storage->loadMultiple($ids);
 
-        $items = '';
+        $items = [];
         foreach ($submissions as $submission) {
-            $items .= $this->renderListItem($submission);
+            $items[] = $this->buildListItemView($submission);
         }
 
-        if ($items === '') {
-            $items = <<<'HTML'
-<div class="empty">
-  <p>No proposal submissions are stored yet.</p>
-  <p>Run <code>php bin/waaseyaa northops:seed</code> to import the latest package from <code>~/NorthOps</code>.</p>
-</div>
-HTML;
-        }
-
-        $html = <<<'HTML'
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Submissions · Miikana</title>
-  <style>
-    :root {
-      --ink: #171411;
-      --paper: #fffdfa;
-      --sand: #f2eadf;
-      --line: #dbccb8;
-      --moss: #315845;
-      --rust: #ba5a2d;
-      --muted: #6f665c;
-    }
-    body {
-      margin: 0;
-      font-family: Georgia, serif;
-      color: var(--ink);
-      background: linear-gradient(180deg, #f8f3eb 0%, #efe5d8 100%);
-    }
-    main {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 40px 24px 64px;
-    }
-    a { color: var(--moss); }
-    .card {
-      background: rgba(255, 253, 250, 0.94);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1.3fr 0.7fr;
-      gap: 24px;
-    }
-    .list {
-      display: grid;
-      gap: 16px;
-      margin-top: 24px;
-    }
-    .item {
-      background: #fffaf2;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 18px;
-    }
-    .item h2 {
-      margin: 0 0 10px;
-      font-size: 1.35rem;
-    }
-    .meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 10px 0 0;
-      font-size: 0.92rem;
-      color: var(--muted);
-    }
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(49, 88, 69, 0.08);
-      color: var(--moss);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      font-size: 0.7rem;
-    }
-    .empty {
-      border: 1px dashed var(--line);
-      border-radius: 16px;
-      padding: 20px;
-      background: #fffaf5;
-    }
-    h1 {
-      margin: 6px 0 12px;
-      font-size: clamp(2rem, 4vw, 3.2rem);
-      letter-spacing: -0.04em;
-    }
-    .eyebrow {
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      font-size: 0.72rem;
-      color: var(--rust);
-      font-weight: 700;
-    }
-    p, li { line-height: 1.8; color: var(--muted); }
-    ul { padding-left: 18px; }
-    code {
-      background: #f3ede5;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 2px 6px;
-      color: var(--ink);
-    }
-    @media (max-width: 860px) {
-      .grid { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <div class="grid">
-      <section class="card">
-        <div class="eyebrow">Submission Workspace</div>
-        <h1>ISET proposal submissions are now a real entity-backed surface.</h1>
-        <p>
-          This view is backed by <code>proposal_submission</code> entities. The NorthOps seed importer
-          hydrates canonical data and a source-form snapshot from the latest ISET package in <code>~/NorthOps</code>.
-        </p>
-        <div class="list">__SUBMISSION_ITEMS__</div>
-      </section>
-      <aside class="card">
-        <div class="eyebrow">Current Surface</div>
-        <ul>
-          <li>NorthOps seed command available</li>
-          <li>Canonical submission JSON persisted per entity</li>
-          <li>Original form values retained for mapping work</li>
-          <li>Per-submission detail route available</li>
-        </ul>
-        <p><a href="/">Back to dashboard</a></p>
-      </aside>
-    </div>
-  </main>
-</body>
-</html>
-HTML;
-
-        $html = str_replace('__SUBMISSION_ITEMS__', $items, $html);
+        $html = $this->twig->render('pages/submissions/index.html.twig', [
+            'items' => $items,
+        ]);
 
         return new Response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
@@ -191,468 +51,55 @@ HTML;
             return new Response('Submission not found.', 404);
         }
 
-        $canonical = json_encode($submission->get('canonical_data') ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        $source = json_encode($submission->get('source_form_data') ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        $submissionIdString = (string) $submission->id();
+        $canonicalData = is_array($submission->get('canonical_data')) ? $submission->get('canonical_data') : [];
+        $validationState = is_array($submission->get('validation_state')) ? $submission->get('validation_state') : [];
+        $confidenceState = is_array($submission->get('confidence_state')) ? $submission->get('confidence_state') : [];
+        $completionState = is_array($submission->get('completion_state')) ? $submission->get('completion_state') : [];
+        $researchLog = is_array($submission->get('research_log')) ? $submission->get('research_log') : [];
+
         $reviewSummary = $this->reviewService->summarizeSubmission($submission);
         $readinessSummary = $this->buildReadinessSummary($submission);
-        $appendixChecklist = $this->renderAppendixChecklist(
-            is_array($submission->get('completion_state')) ? $submission->get('completion_state') : [],
-        );
+        $artifactAudit = $this->artifactAuditService->summarize($submission);
         $appendixNotes = $this->reviewService->latestAppendixNotes($submission->id());
         $appendixNoteActivity = $this->reviewService->latestAppendixNoteActivity($submission->id());
-        $appendixNotesPanel = $this->renderAppendixNotesPanel($appendixNotes, $appendixNoteActivity);
-        $reviewPanel = $this->renderReviewPanel($reviewSummary, (string) $submission->id());
-        $readinessAction = $this->renderReadinessAction($readinessSummary, (string) $submission->id(), $_SERVER['REQUEST_URI'] ?? '');
-        $artifactAuditPanel = $this->renderArtifactAuditPanel(
-            $this->artifactAuditService->summarize($submission),
-            (string) $submission->id(),
-        );
-        $confidencePanel = $this->renderConfidencePanel(
-            is_array($submission->get('confidence_state')) ? $submission->get('confidence_state') : [],
-            is_array($submission->get('canonical_data')) ? $submission->get('canonical_data') : [],
-        );
-        $readinessPanel = $this->renderReadinessPanel($readinessSummary);
-        $editPanel = $this->renderCanonicalEditPanel(
-            is_array($submission->get('canonical_data')) ? $submission->get('canonical_data') : [],
-            (string) $submission->id(),
-            (string) ($_GET['edit_path'] ?? ''),
-            (string) ($_GET['edit_format'] ?? 'string'),
-            $this->editNoticeFromUri($_SERVER['REQUEST_URI'] ?? ''),
-        );
-        $fieldReviewPanel = $this->renderFieldReviewPanel(
-            $this->reviewService->fieldAnnotations($submission->id()),
-            is_array($submission->get('canonical_data')) ? $submission->get('canonical_data') : [],
-            (string) $submission->id(),
-        );
-        $researchPanel = $this->renderResearchPanel(
-            is_array($submission->get('research_log')) ? $submission->get('research_log') : [],
-            is_array($submission->get('validation_state')) ? $submission->get('validation_state') : [],
-            (string) $submission->id(),
-        );
-        $researchBackedPanel = $this->renderAppliedResearchDraftsPanel(
-            is_array($submission->get('validation_state')) ? $submission->get('validation_state') : [],
-            (string) $submission->id(),
-        );
 
-        $html = <<<'HTML'
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Submission Detail · Miikana</title>
-  <style>
-    :root {
-      --ink: #171411;
-      --paper: #fffdfa;
-      --sand: #f2eadf;
-      --line: #dbccb8;
-      --moss: #315845;
-      --rust: #ba5a2d;
-      --muted: #6f665c;
-      --code: #1d2431;
-      --code-ink: #ecf2fc;
-    }
-    body {
-      margin: 0;
-      font-family: Georgia, serif;
-      color: var(--ink);
-      background: linear-gradient(180deg, #f8f3eb 0%, #efe5d8 100%);
-    }
-    main {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 40px 24px 64px;
-    }
-    a { color: var(--moss); }
-    .header {
-      margin-bottom: 24px;
-    }
-    .eyebrow {
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      font-size: 0.72rem;
-      color: var(--rust);
-      font-weight: 700;
-    }
-    h1 {
-      margin: 8px 0 10px;
-      font-size: clamp(2rem, 4vw, 3.2rem);
-      letter-spacing: -0.04em;
-    }
-    p { color: var(--muted); line-height: 1.8; }
-    .meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 14px;
-      color: var(--muted);
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-    .full {
-      grid-column: 1 / -1;
-    }
-    .card {
-      background: rgba(255, 253, 250, 0.94);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
-    }
-    pre {
-      margin: 12px 0 0;
-      padding: 18px;
-      border-radius: 14px;
-      overflow: auto;
-      background: var(--code);
-      color: var(--code-ink);
-      font-size: 0.83rem;
-      line-height: 1.6;
-    }
-    .review-summary {
-      display: grid;
-      gap: 12px;
-    }
-    .review-strip {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
-    .review-note {
-      border-left: 4px solid var(--rust);
-      padding-left: 14px;
-      color: var(--ink);
-    }
-    .review-note strong {
-      display: block;
-      margin-bottom: 6px;
-    }
-    .edit-layout {
-      display: grid;
-      grid-template-columns: 0.85fr 1.15fr;
-      gap: 16px;
-      align-items: start;
-    }
-    .edit-layout form {
-      display: grid;
-      gap: 12px;
-    }
-    .edit-layout label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--muted);
-    }
-    .edit-layout input,
-    .edit-layout select,
-    .edit-layout textarea,
-    .edit-layout button {
-      font: inherit;
-    }
-    .edit-layout input,
-    .edit-layout select,
-    .edit-layout textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #fff;
-      color: var(--ink);
-    }
-    .edit-layout textarea {
-      min-height: 140px;
-      resize: vertical;
-    }
-    .edit-layout button {
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: var(--moss);
-      color: #fff;
-      cursor: pointer;
-    }
-    .edit-note {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 16px;
-      background: #fffefd;
-    }
-    .edit-notice {
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(33, 102, 58, 0.18);
-      background: rgba(33, 102, 58, 0.08);
-      color: #21663a;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    .annotation-list {
-      display: grid;
-      gap: 14px;
-      margin-top: 12px;
-    }
-    .annotation {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 16px;
-      background: #fffefd;
-    }
-    .annotation-path {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.84rem;
-      color: var(--moss);
-      margin-bottom: 8px;
-    }
-    .annotation-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      font-size: 0.88rem;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-    .annotation-value {
-      margin-top: 10px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: #f8f2ea;
-      border: 1px solid var(--line);
-      color: var(--ink);
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .annotation-empty {
-      border: 1px dashed var(--line);
-      border-radius: 14px;
-      padding: 16px;
-      background: #fffaf5;
-      color: var(--muted);
-    }
-    .readiness-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 12px;
-    }
-    .readiness-card {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
-      background: #fffefd;
-    }
-    .readiness-card strong {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.76rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-    }
-    .readiness-note {
-      margin-top: 12px;
-      border-left: 4px solid var(--moss);
-      padding-left: 14px;
-      color: var(--ink);
-    }
-    .readiness-action {
-      margin-top: 14px;
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .readiness-action form {
-      margin: 0;
-    }
-    .readiness-action button {
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: var(--moss);
-      color: #fff;
-      font: inherit;
-      cursor: pointer;
-    }
-    .readiness-action .notice {
-      margin: 0;
-      padding: 8px 12px;
-      border-radius: 10px;
-      background: rgba(33, 102, 58, 0.08);
-      border: 1px solid rgba(33, 102, 58, 0.18);
-      color: #21663a;
-      font-weight: 700;
-    }
-    .checklist {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 12px;
-    }
-    .checklist-item {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
-      background: #fffefd;
-    }
-    .checklist-item strong {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-    }
-    .confidence-list {
-      display: grid;
-      gap: 14px;
-      margin-top: 12px;
-    }
-    .confidence-item {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 16px;
-      background: #fffefd;
-    }
-    .confidence-item.weak {
-      border-color: rgba(186, 90, 45, 0.4);
-      background: #fff8f2;
-    }
-    .confidence-item strong {
-      display: block;
-      margin-bottom: 8px;
-    }
-    .confidence-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      font-size: 0.88rem;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-    .risk {
-      color: var(--rust);
-      font-weight: 700;
-    }
-    .pill {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(186, 90, 45, 0.1);
-      color: var(--rust);
-      font-size: 0.76rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    @media (max-width: 920px) {
-      .grid { grid-template-columns: 1fr; }
-      .full { grid-column: auto; }
-      .edit-layout { grid-template-columns: 1fr; }
-      .readiness-grid { grid-template-columns: 1fr 1fr; }
-      .checklist { grid-template-columns: 1fr 1fr; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <div class="header">
-      <div class="eyebrow">Submission Detail</div>
-      <h1>__TITLE__</h1>
-      <p>The canonical proposal state and the raw imported HTML form snapshot are both visible here so the mapper can evolve without losing source fidelity.</p>
-      <div class="meta">
-        <span>Status: __STATUS__</span>
-        <span>Applicant: __APPLICANT__</span>
-        <span>Business: __BUSINESS__</span>
-      </div>
-        <p><a href="/submissions">Back to submissions</a> · <a href="/cohorts">Cohorts</a> · <a href="/submissions/__ID__/intake">Intake</a> · <a href="/submissions/__ID__/documents">Appendix documents</a> · <a href="/submissions/__ID__/package">Merged package</a> · <a href="/submissions/__ID__/package/pdf">PDF</a> · <a href="/submissions/__ID__/exports/bundle/download">Bundle ZIP</a> · <a href="/submissions/__ID__/exports">Exports</a> · <a href="/submissions/__ID__/review">Review</a></p>
-    </div>
-    <div class="grid">
-      <section class="card full">
-        <div class="eyebrow">Review Summary</div>
-        __REVIEW_PANEL__
-      </section>
-      <section class="card full">
-        <div class="eyebrow">Readiness</div>
-        __READINESS_PANEL____READINESS_ACTION__
-      </section>
-      <section class="card full">
-        <div class="eyebrow">Package Checklist</div>
-        __APPENDIX_CHECKLIST__
-      </section>
-      <section class="card full">
-        <div class="eyebrow">Artifact Audit</div>
-        __ARTIFACT_AUDIT_PANEL__
-      </section>
-      <section class="card full">
-        <div class="eyebrow">Recent Research</div>
-        __RESEARCH_PANEL__
-      </section>
-      <section class="card full">
-        <div class="eyebrow">Research-Backed Field Updates</div>
-        __RESEARCH_BACKED_PANEL__
-      </section>
-      <section class="card full">
-        <div class="eyebrow">Appendix Review Notes</div>
-        __APPENDIX_NOTES_PANEL__
-      </section>
-      <section class="card full">
-        <div class="eyebrow">Field Confidence</div>
-        __CONFIDENCE_PANEL__
-      </section>
-      <section class="card full">
-        <div class="eyebrow">Canonical Edit</div>
-        __EDIT_PANEL__
-      </section>
-      <section class="card full">
-        <div class="eyebrow">Field Review Notes</div>
-        __FIELD_REVIEW_PANEL__
-      </section>
-      <section class="card">
-        <div class="eyebrow">Canonical Data</div>
-        <pre>__CANONICAL__</pre>
-      </section>
-      <section class="card">
-        <div class="eyebrow">Imported Form Snapshot</div>
-        <pre>__SOURCE__</pre>
-      </section>
-    </div>
-  </main>
-</body>
-</html>
-HTML;
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
 
-        $replacements = [
-            '__TITLE__' => htmlspecialchars((string) ($submission->label() ?? 'Submission'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            '__STATUS__' => htmlspecialchars((string) ($submission->get('status') ?? 'unknown'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            '__APPLICANT__' => htmlspecialchars((string) ($submission->get('applicant_name') ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            '__BUSINESS__' => htmlspecialchars((string) ($submission->get('business_name') ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            '__CANONICAL__' => htmlspecialchars((string) $canonical, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            '__SOURCE__' => htmlspecialchars((string) $source, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            '__ID__' => htmlspecialchars((string) $submission->id(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            '__REVIEW_PANEL__' => $reviewPanel,
-            '__READINESS_PANEL__' => $readinessPanel,
-            '__READINESS_ACTION__' => $readinessAction,
-            '__APPENDIX_CHECKLIST__' => $appendixChecklist,
-            '__ARTIFACT_AUDIT_PANEL__' => $artifactAuditPanel,
-            '__RESEARCH_PANEL__' => $researchPanel,
-            '__RESEARCH_BACKED_PANEL__' => $researchBackedPanel,
-            '__APPENDIX_NOTES_PANEL__' => $appendixNotesPanel,
-            '__CONFIDENCE_PANEL__' => $confidencePanel,
-            '__EDIT_PANEL__' => $editPanel,
-            '__FIELD_REVIEW_PANEL__' => $fieldReviewPanel,
-        ];
+        $html = $this->twig->render('pages/submissions/show.html.twig', [
+            'title' => (string) ($submission->label() ?? 'Submission'),
+            'submission_id' => $submissionIdString,
+            'status' => (string) ($submission->get('status') ?? 'unknown'),
+            'applicant' => (string) ($submission->get('applicant_name') ?? ''),
+            'business' => (string) ($submission->get('business_name') ?? ''),
+            'canonical_json' => (string) json_encode($canonicalData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            'source_json' => (string) json_encode($submission->get('source_form_data') ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            'review' => $this->buildReviewPanelView($reviewSummary),
+            'readiness' => $readinessSummary,
+            'readiness_action' => $this->buildReadinessActionView($readinessSummary, $submissionIdString, $requestUri),
+            'completion_state' => $completionState,
+            'artifact_audit' => $this->buildArtifactAuditPanelView($artifactAudit, $submissionIdString),
+            'research' => $this->buildResearchPanelView($researchLog, $validationState, $submissionIdString),
+            'research_backed' => $this->buildAppliedResearchDraftsView($validationState, $submissionIdString),
+            'appendix_notes' => $this->buildAppendixNotesView($appendixNotes, $appendixNoteActivity),
+            'confidence_items' => $this->buildConfidencePanelView($confidenceState, $canonicalData),
+            'edit_panel' => $this->buildCanonicalEditPanelView(
+                $canonicalData,
+                $submissionIdString,
+                (string) ($_GET['edit_path'] ?? ''),
+                (string) ($_GET['edit_format'] ?? 'string'),
+                $this->editNoticeKey($requestUri),
+            ),
+            'field_review' => $this->buildFieldReviewView(
+                $this->reviewService->fieldAnnotations($submission->id()),
+                $canonicalData,
+                $submissionIdString,
+            ),
+        ]);
 
-        return new Response(str_replace(array_keys($replacements), array_values($replacements), $html), 200, ['Content-Type' => 'text/html; charset=UTF-8']);
+        return new Response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
+
 
     public function markReadyForReview(int|string $submissionId): Response
     {
@@ -932,184 +379,145 @@ HTML;
         return new RedirectResponse('/submissions/' . rawurlencode((string) $submissionId) . '?updated=research-rejected');
     }
 
-    private function renderListItem(EntityInterface $submission): string
+    /**
+     * @return array<string,mixed>
+     */
+    private function buildListItemView(EntityInterface $submission): array
     {
         $reviewSummary = $this->reviewService->summarizeSubmission($submission);
-        $cohortMeta = '';
+
+        $cohort = null;
         $cohortId = (int) ($submission->get('cohort_id') ?? 0);
         if ($cohortId > 0) {
-            $cohort = $this->entityTypeManager->getStorage('proposal_cohort')->load($cohortId);
-            if ($cohort instanceof EntityInterface) {
-                $cohortMeta = sprintf(
-                    '<span>Cohort: <a href="/cohorts/%s">%s</a></span>',
-                    rawurlencode((string) $cohort->id()),
-                    htmlspecialchars((string) ($cohort->label() ?? 'Cohort'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                );
+            $cohortEntity = $this->entityTypeManager->getStorage('proposal_cohort')->load($cohortId);
+            if ($cohortEntity instanceof EntityInterface) {
+                $cohort = [
+                    'id' => (string) $cohortEntity->id(),
+                    'label' => (string) ($cohortEntity->label() ?? 'Cohort'),
+                ];
             }
         }
-        $title = htmlspecialchars((string) ($submission->label() ?? 'Untitled Submission'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $status = htmlspecialchars((string) ($submission->get('status') ?? 'unknown'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $applicant = htmlspecialchars((string) ($submission->get('applicant_name') ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $business = htmlspecialchars((string) ($submission->get('business_name') ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $url = '/submissions/' . rawurlencode((string) $submission->id());
+
         $confidenceSummary = $this->summarizeConfidenceState(is_array($submission->get('confidence_state')) ? $submission->get('confidence_state') : []);
         $readinessSummary = $this->buildReadinessSummary($submission);
+
         $reviewMeta = sprintf(
             'Reviews: %d · Reviewed appendices: %d/%d%s',
             (int) $reviewSummary['review_count'],
             (int) $reviewSummary['reviewed_appendix_count'],
             (int) $reviewSummary['reviewed_appendix_total'],
-            ($reviewSummary['latest_created_at'] ?? null) ? ' · Latest: ' . htmlspecialchars((string) $reviewSummary['latest_created_at'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '',
+            ($reviewSummary['latest_created_at'] ?? null) ? ' · Latest: ' . (string) $reviewSummary['latest_created_at'] : '',
         );
-        $reviewCallout = '';
 
+        $revisionNote = null;
         if (($reviewSummary['latest_comment'] ?? null) && $reviewSummary['has_revisions_requested']) {
-            $reviewCallout = sprintf(
-                '<p><span class="badge" style="background: rgba(186, 90, 45, 0.12); color: #ba5a2d;">Revision Note</span> %s</p>',
-                htmlspecialchars((string) $reviewSummary['latest_comment'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            );
+            $revisionNote = (string) $reviewSummary['latest_comment'];
         }
-        if ($confidenceSummary['weak_count'] > 0) {
-            $reviewCallout .= sprintf(
-                '<p><span class="badge" style="background: rgba(186, 90, 45, 0.12); color: #ba5a2d;">Low Confidence</span> %d %s.</p>',
-                $confidenceSummary['weak_count'],
-                $confidenceSummary['weak_count'] === 1 ? 'field needs follow-up' : 'fields need follow-up',
-            );
-        }
-        $reviewCallout .= sprintf(
-            '<p><span class="badge" style="background: rgba(49, 88, 69, 0.12); color: #315845;">Readiness</span> %s</p>',
-            htmlspecialchars($readinessSummary['label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-        );
 
-        return sprintf(
-            '<article class="item"><span class="badge">%s</span><h2><a href="%s">%s</a></h2><p>Canonical proposal state and imported source form data are attached to this submission.</p>%s<div class="meta"><span>ID %s</span><span>Applicant: %s</span><span>Business: %s</span>%s<span>%s</span><span><a href="%s/intake">Intake</a></span><span><a href="%s/documents">Documents</a></span><span><a href="%s/package">Package</a></span><span><a href="%s/package/pdf">PDF</a></span><span><a href="%s/exports/bundle/download">Bundle ZIP</a></span><span><a href="%s/exports">Exports</a></span><span><a href="%s/review">Review</a></span></div></article>',
-            $status,
-            $url,
-            $title,
-            $reviewCallout,
-            htmlspecialchars((string) $submission->id(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            $applicant,
-            $business,
-            $cohortMeta,
-            $reviewMeta,
-            $url,
-            $url,
-            $url,
-            $url,
-            $url,
-            $url,
-            $url,
-        );
+        $weakCount = (int) $confidenceSummary['weak_count'];
+
+        return [
+            'id' => (string) $submission->id(),
+            'url' => '/submissions/' . rawurlencode((string) $submission->id()),
+            'title' => (string) ($submission->label() ?? 'Untitled Submission'),
+            'status' => (string) ($submission->get('status') ?? 'unknown'),
+            'applicant' => (string) ($submission->get('applicant_name') ?? ''),
+            'business' => (string) ($submission->get('business_name') ?? ''),
+            'cohort' => $cohort,
+            'review_meta' => $reviewMeta,
+            'revision_note' => $revisionNote,
+            'weak_count' => $weakCount,
+            'weak_single' => $weakCount === 1,
+            'readiness_label' => (string) $readinessSummary['label'],
+        ];
     }
 
     /**
      * @param array{review_count:int,latest_action:?string,latest_title:?string,latest_comment:?string,latest_section:?string,latest_field:?string,latest_created_at:?string,status:string,current_step:string,has_revisions_requested:bool,is_approved:bool,reviewed_appendix_count:int,reviewed_appendix_total:int} $reviewSummary
+     * @return array<string,mixed>
      */
-    private function renderReviewPanel(array $reviewSummary, string $submissionId): string
+    private function buildReviewPanelView(array $reviewSummary): array
     {
         $latestComment = trim((string) ($reviewSummary['latest_comment'] ?? ''));
-        $latestTitle = trim((string) ($reviewSummary['latest_title'] ?? 'Latest review activity'));
         $latestSection = trim((string) ($reviewSummary['latest_section'] ?? ''));
         $latestField = trim((string) ($reviewSummary['latest_field'] ?? ''));
         $latestCreatedAt = trim((string) ($reviewSummary['latest_created_at'] ?? ''));
-        $notes = $latestComment !== ''
-            ? sprintf(
-                '<div class="review-note"><strong>%s</strong><div>%s</div></div>',
-                htmlspecialchars($latestTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($latestComment, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            )
-            : '<div class="review-note"><strong>No review notes yet.</strong><div>Staff review activity will appear here once comments or status changes are recorded.</div></div>';
 
-        $revisionPill = $reviewSummary['has_revisions_requested']
-            ? '<span class="pill">Revisions Requested</span>'
-            : ($reviewSummary['is_approved'] ? '<span class="pill">Approved Track</span>' : '');
+        $revisionPill = null;
+        if ($reviewSummary['has_revisions_requested']) {
+            $revisionPill = 'Revisions Requested';
+        } elseif ($reviewSummary['is_approved']) {
+            $revisionPill = 'Approved Track';
+        }
 
-        return sprintf(
-            '<div class="review-summary"><div class="review-strip"><span>Status: %s</span><span>Current step: %s</span><span>Review actions: %d</span><span>Appendices reviewed: %d/%d</span><span>Section: %s</span><span>Field: %s</span><span>Updated: %s</span>%s</div>%s<p><a href="/submissions/%s/review">Open full review cockpit</a></p></div>',
-            htmlspecialchars((string) $reviewSummary['status'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            htmlspecialchars((string) $reviewSummary['current_step'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            (int) $reviewSummary['review_count'],
-            (int) $reviewSummary['reviewed_appendix_count'],
-            (int) $reviewSummary['reviewed_appendix_total'],
-            htmlspecialchars($latestSection !== '' ? $latestSection : 'n/a', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            htmlspecialchars($latestField !== '' ? $latestField : 'n/a', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            htmlspecialchars($latestCreatedAt !== '' ? $latestCreatedAt : 'n/a', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            $revisionPill,
-            $notes,
-            htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-        );
+        return [
+            'status' => (string) $reviewSummary['status'],
+            'current_step' => (string) $reviewSummary['current_step'],
+            'review_count' => (int) $reviewSummary['review_count'],
+            'reviewed_appendix_count' => (int) $reviewSummary['reviewed_appendix_count'],
+            'reviewed_appendix_total' => (int) $reviewSummary['reviewed_appendix_total'],
+            'latest_section' => $latestSection !== '' ? $latestSection : 'n/a',
+            'latest_field' => $latestField !== '' ? $latestField : 'n/a',
+            'latest_created_at' => $latestCreatedAt !== '' ? $latestCreatedAt : 'n/a',
+            'revision_pill' => $revisionPill,
+            'has_note' => $latestComment !== '',
+            'latest_title' => trim((string) ($reviewSummary['latest_title'] ?? 'Latest review activity')),
+            'latest_comment' => $latestComment,
+        ];
     }
 
     /**
      * @param array{ready_count:int,total_count:int,missing:list<string>,items:list<array{document_type:string,label:string,ready:bool}>} $artifactAudit
+     * @return array<string,mixed>
      */
-    private function renderArtifactAuditPanel(array $artifactAudit, string $submissionId): string
+    private function buildArtifactAuditPanelView(array $artifactAudit, string $submissionId): array
     {
-        $items = '';
-        foreach ($artifactAudit['items'] as $item) {
-            $items .= sprintf(
-                '<div class="checklist-item"><strong>%s</strong>%s</div>',
-                htmlspecialchars((string) $item['label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $item['ready'] ? 'Ready' : 'Missing',
-            );
-        }
-
-        $warning = $artifactAudit['missing'] === []
-            ? '<div class="annotation-empty">All expected HTML, PDF, and bundle artifacts are present on disk.</div>'
-            : sprintf(
-                '<div class="annotation-empty">Missing artifacts: %s</div>',
-                htmlspecialchars(implode(' · ', $artifactAudit['missing']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            );
-
-        return sprintf(
-            '<div class="readiness-grid"><div class="readiness-card"><strong>Artifacts Ready</strong>%d/%d</div><div class="readiness-card"><strong>Missing</strong>%d</div><div class="readiness-card"><strong>Action</strong><a href="/submissions/%s/exports">Open exports</a></div><div class="readiness-card"><strong>Bundle</strong><a href="/submissions/%s/exports/bundle/download">Download</a></div></div>%s<div class="checklist">%s</div>',
-            (int) $artifactAudit['ready_count'],
-            (int) $artifactAudit['total_count'],
-            count($artifactAudit['missing']),
-            htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            $warning,
-            $items,
-        );
+        return [
+            'ready_count' => (int) $artifactAudit['ready_count'],
+            'total_count' => (int) $artifactAudit['total_count'],
+            'missing_count' => count($artifactAudit['missing']),
+            'missing' => $artifactAudit['missing'],
+            'items' => array_map(
+                static fn (array $item): array => [
+                    'label' => (string) $item['label'],
+                    'ready' => (bool) $item['ready'],
+                ],
+                $artifactAudit['items'],
+            ),
+            'submission_id' => $submissionId,
+        ];
     }
 
     /**
      * @param array<string, mixed> $confidenceState
      * @param array<string, mixed> $canonicalData
+     * @return list<array<string,mixed>>
      */
-    private function renderConfidencePanel(array $confidenceState, array $canonicalData): string
+    private function buildConfidencePanelView(array $confidenceState, array $canonicalData): array
     {
-        $entries = [];
+        $items = [];
 
         foreach ($confidenceState as $path => $state) {
             if (!is_array($state) || !isset($state['confidence'])) {
                 continue;
             }
 
-            $confidence = (float) $state['confidence'];
+            $pathString = (string) $path;
             $resolved = (bool) ($state['resolved'] ?? true);
             $note = (string) ($state['note'] ?? '');
             $updatedAt = (string) ($state['updated_at'] ?? '');
-            $value = $this->renderAnnotationValue($this->valueAtPath($canonicalData, (string) $path));
-
-            $entries[] = sprintf(
-                '<article class="confidence-item %s"><strong>%s</strong><div class="confidence-meta"><span>confidence %.2f</span><span class="%s">%s</span><span>%s</span></div><div>%s</div><div class="annotation-value">%s</div></article>',
-                $resolved ? '' : 'weak',
-                htmlspecialchars((string) $path, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $confidence,
-                $resolved ? '' : 'risk',
-                $resolved ? 'resolved' : 'follow-up needed',
-                htmlspecialchars($updatedAt !== '' ? $updatedAt : 'n/a', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($note !== '' ? $note : 'No confidence note recorded.', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            );
+            $items[] = [
+                'path' => $pathString,
+                'resolved' => $resolved,
+                'confidence' => sprintf('%.2f', (float) $state['confidence']),
+                'state_label' => $resolved ? 'resolved' : 'follow-up needed',
+                'updated_at' => $updatedAt !== '' ? $updatedAt : 'n/a',
+                'note' => $note !== '' ? $note : 'No confidence note recorded.',
+                'value' => $this->renderAnnotationValue($this->valueAtPath($canonicalData, $pathString)),
+            ];
         }
 
-        if ($entries === []) {
-            return '<div class="annotation-empty">No intake confidence metadata recorded yet. New intake turns will appear here with confidence and follow-up notes.</div>';
-        }
-
-        return '<div class="confidence-list">' . implode('', $entries) . '</div>';
+        return $items;
     }
 
     /**
@@ -1189,137 +597,89 @@ HTML;
 
     /**
      * @param array{label:string,status:string,current_step:string,unresolved_count:int,weak_count:int,note:string} $summary
+     * @return array{show_form:bool,notice:?string}
      */
-    private function renderReadinessPanel(array $summary): string
-    {
-        return sprintf(
-            '<div class="readiness-grid"><div class="readiness-card"><strong>Readiness</strong>%s</div><div class="readiness-card"><strong>Status</strong>%s</div><div class="readiness-card"><strong>Current Step</strong>%s</div><div class="readiness-card"><strong>Risk Counts</strong>%d unresolved · %d low-confidence</div></div><div class="readiness-note">%s</div>',
-            htmlspecialchars($summary['label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            htmlspecialchars($summary['status'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            htmlspecialchars($summary['current_step'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            $summary['unresolved_count'],
-            $summary['weak_count'],
-            htmlspecialchars($summary['note'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-        );
-    }
-
-    /**
-     * @param array{label:string,status:string,current_step:string,unresolved_count:int,weak_count:int,note:string} $summary
-     */
-    private function renderReadinessAction(array $summary, string $submissionId, string $uri): string
+    private function buildReadinessActionView(array $summary, string $submissionId, string $uri): array
     {
         $notice = match (true) {
-            str_contains($uri, 'status=ready-for-review') => '<div class="notice">Submission moved to ready_for_review.</div>',
-            str_contains($uri, 'error=not-ready') => '<div class="notice">Submission is not clean enough for review yet.</div>',
-            default => '',
+            str_contains($uri, 'status=ready-for-review') => 'moved_to_ready',
+            str_contains($uri, 'error=not-ready') => 'not_ready',
+            default => null,
         };
 
-        if ($summary['label'] !== 'Ready for review' || $summary['status'] !== 'intake_in_progress') {
-            return $notice === '' ? '' : '<div class="readiness-action">' . $notice . '</div>';
-        }
+        $showForm = $summary['label'] === 'Ready for review' && $summary['status'] === 'intake_in_progress';
 
-        return sprintf(
-            '<div class="readiness-action"><form method="post" action="/submissions/%s/ready-for-review"><button type="submit">Mark Ready for Review</button></form>%s</div>',
-            htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            $notice,
-        );
+        return [
+            'show_form' => $showForm,
+            'notice' => $notice,
+        ];
     }
 
     /**
      * @param list<array<string,mixed>> $researchLog
      * @param array<string,mixed> $validationState
+     * @return array{drafts:list<array<string,mixed>>,drafts_notice:?string,items:list<array<string,mixed>>}
      */
-    private function renderResearchPanel(array $researchLog, array $validationState, string $submissionId): string
+    private function buildResearchPanelView(array $researchLog, array $validationState, string $submissionId): array
     {
         $items = [];
-        $draftPanel = $this->renderResearchDraftsPanel(
-            is_array($validationState['research_drafts'] ?? null) ? $validationState['research_drafts'] : [],
-            $submissionId,
-        );
-
         foreach (array_reverse($researchLog, true) as $index => $item) {
             if (!is_array($item) || !isset($item['query'])) {
                 continue;
             }
 
-            $kind = htmlspecialchars((string) ($item['kind'] ?? 'research'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $query = htmlspecialchars((string) ($item['query'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $provider = htmlspecialchars((string) ($item['provider'] ?? 'research'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $summary = htmlspecialchars((string) ($item['summary'] ?? 'No summary available.'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $citations = is_array($item['citations'] ?? null) ? $item['citations'] : [];
             $assessment = $this->assessResearchItem($item);
-
-            $citationHtml = '';
-            if ($citations !== []) {
-                $links = [];
-                foreach (array_slice($citations, 0, 3) as $citation) {
-                    if (!is_array($citation)) {
-                        continue;
-                    }
-
-                    $title = htmlspecialchars((string) ($citation['title'] ?? 'Source'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                    $url = htmlspecialchars((string) ($citation['url'] ?? '#'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-                    if (str_starts_with((string) ($citation['url'] ?? ''), '/')) {
-                        $links[] = sprintf('<div><strong>%s</strong><div><code>%s</code></div></div>', $title, $url);
-                    } else {
-                        $links[] = sprintf('<div><a href="%s" target="_blank" rel="noreferrer">%s</a></div>', $url, $title);
-                    }
+            $citations = [];
+            foreach (array_slice(is_array($item['citations'] ?? null) ? $item['citations'] : [], 0, 3) as $citation) {
+                if (!is_array($citation)) {
+                    continue;
                 }
-
-                if ($links !== []) {
-                    $citationHtml = '<div class="annotation-value">' . implode('', $links) . '</div>';
-                }
+                $url = (string) ($citation['url'] ?? '#');
+                $citations[] = [
+                    'is_internal' => str_starts_with((string) ($citation['url'] ?? ''), '/'),
+                    'title' => (string) ($citation['title'] ?? 'Source'),
+                    'url' => $url,
+                ];
             }
 
-            $researchMeta = sprintf(
-                '<span>provider: %s</span><span>quality: %s</span>',
-                $provider,
-                htmlspecialchars((string) $assessment['label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            );
+            $targetOptions = $assessment['draftable']
+                ? $this->buildResearchDraftTargetOptionsView((string) ($item['kind'] ?? 'research'))
+                : [];
 
-            $draftActions = '';
-            if ($assessment['draftable']) {
-                $draftActions = sprintf(
-                    '<form method="post" action="/submissions/%s/research/draft" style="margin-top: 12px; display: grid; gap: 10px;"><input type="hidden" name="research_index" value="%d"><div><label for="target_path_%d" style="display:block; margin-bottom:6px; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:#6f665c;">Create Draft For</label><select id="target_path_%d" name="target_path" style="width:100%%; padding:10px 12px; border:1px solid #dbccb8; border-radius:10px; background:#fff; color:#171411;">%s</select></div><div><button type="submit" style="padding:10px 14px; border-radius:10px; border:1px solid #dbccb8; background:#315845; color:#fff; cursor:pointer;">Create Draft Proposal</button></div></form>',
-                    htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                    (int) $index,
-                    (int) $index,
-                    (int) $index,
-                    $this->renderResearchDraftTargetOptions((string) ($item['kind'] ?? 'research')),
-                );
-            } elseif ($assessment['reason'] !== '') {
-                $draftActions = sprintf(
-                    '<div class="annotation-value" style="margin-top:12px;"><strong>Draft locked</strong><div>%s</div></div>',
-                    htmlspecialchars((string) $assessment['reason'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                );
-            }
-
-            $items[] = sprintf(
-                '<div class="annotation"><div class="annotation-path">%s</div><div class="annotation-meta">%s</div><div>%s</div>%s%s</div>',
-                $kind . ($query !== '' ? ' · ' . $query : ''),
-                $researchMeta,
-                $summary,
-                $citationHtml,
-                $draftActions,
-            );
+            $items[] = [
+                'index' => (int) $index,
+                'kind' => (string) ($item['kind'] ?? 'research'),
+                'query' => (string) ($item['query'] ?? ''),
+                'provider' => (string) ($item['provider'] ?? 'research'),
+                'summary' => (string) ($item['summary'] ?? 'No summary available.'),
+                'quality_label' => (string) $assessment['label'],
+                'citations' => $citations,
+                'draftable' => (bool) $assessment['draftable'],
+                'lock_reason' => (string) $assessment['reason'],
+                'target_options' => $targetOptions,
+                'submission_id' => $submissionId,
+            ];
 
             if (count($items) >= 4) {
                 break;
             }
         }
 
-        if ($items === []) {
-            return $draftPanel . '<div class="annotation-empty">No recent research artifacts are attached to this submission.</div>';
-        }
-
-        return $draftPanel . '<div class="annotation-list">' . implode('', $items) . '</div>';
+        return [
+            'drafts' => $this->buildResearchDraftsView(
+                is_array($validationState['research_drafts'] ?? null) ? $validationState['research_drafts'] : [],
+                $submissionId,
+            ),
+            'drafts_notice' => $this->researchDraftsNoticeKey($_SERVER['REQUEST_URI'] ?? ''),
+            'items' => $items,
+        ];
     }
 
     /**
      * @param list<array<string,mixed>> $drafts
+     * @return list<array<string,mixed>>
      */
-    private function renderResearchDraftsPanel(array $drafts, string $submissionId): string
+    private function buildResearchDraftsView(array $drafts, string $submissionId): array
     {
         $items = [];
 
@@ -1329,70 +689,50 @@ HTML;
             }
 
             $status = (string) ($draft['status'] ?? 'pending');
-            $targetPath = htmlspecialchars((string) ($draft['target_path'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $source = htmlspecialchars((string) ($draft['source_query'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $value = htmlspecialchars((string) ($draft['suggested_value'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $draftId = htmlspecialchars((string) ($draft['id'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $quality = htmlspecialchars((string) ($draft['draft_quality'] ?? 'unrated'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $targetPathRaw = (string) ($draft['target_path'] ?? '');
+            $sourceQuery = (string) ($draft['source_query'] ?? '');
+            $suggestedValue = (string) ($draft['suggested_value'] ?? '');
 
-            $actions = '';
-            if ($status === 'pending') {
-                $actions = sprintf(
-                    '<div class="annotation-meta"><form method="post" action="/submissions/%s/research/drafts/%s/apply"><button type="submit" style="padding:8px 12px; border-radius:10px; border:1px solid #dbccb8; background:#315845; color:#fff; cursor:pointer;">Apply Draft</button></form><form method="post" action="/submissions/%s/research/drafts/%s/reject"><button type="submit" style="padding:8px 12px; border-radius:10px; border:1px solid #dbccb8; background:#ba5a2d; color:#fff; cursor:pointer;">Reject Draft</button></form><a href="/submissions/%s?edit_path=%s">Inspect target field</a></div>',
-                    htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                    $draftId,
-                    htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                    $draftId,
-                    htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                    rawurlencode((string) ($draft['target_path'] ?? '')),
-                );
-            } elseif ($status === 'applied' && array_key_exists('previous_value', $draft)) {
-                $actions = sprintf(
-                    '<div class="annotation-meta"><form method="post" action="/submissions/%s/research/drafts/%s/restore"><button type="submit" style="padding:8px 12px; border-radius:10px; border:1px solid #dbccb8; background:#83613d; color:#fff; cursor:pointer;">Restore Previous Value</button></form><a href="/submissions/%s?edit_path=%s">Inspect target field</a></div>',
-                    htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                    $draftId,
-                    htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                    rawurlencode((string) ($draft['target_path'] ?? '')),
-                );
-            }
-
-            $items[] = sprintf(
-                '<div class="annotation"><div class="annotation-path">%s · %s</div><div class="annotation-meta"><span>status: %s</span><span>quality: %s</span><span>created: %s</span></div><div><strong>Source</strong><div>%s</div></div><div class="annotation-value">%s</div>%s</div>',
-                $targetPath !== '' ? $targetPath : 'draft',
-                htmlspecialchars((string) ($draft['source_kind'] ?? 'research'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($status, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $quality,
-                htmlspecialchars((string) ($draft['created_at'] ?? 'n/a'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $source !== '' ? $source : 'n/a',
-                $value !== '' ? $value : 'No suggested value available.',
-                $actions,
-            );
+            $items[] = [
+                'id' => (string) ($draft['id'] ?? ''),
+                'status' => $status,
+                'target_path' => $targetPathRaw !== '' ? $targetPathRaw : 'draft',
+                'target_path_encoded' => rawurlencode($targetPathRaw),
+                'source_kind' => (string) ($draft['source_kind'] ?? 'research'),
+                'quality' => (string) ($draft['draft_quality'] ?? 'unrated'),
+                'created_at' => (string) ($draft['created_at'] ?? 'n/a'),
+                'source_query' => $sourceQuery !== '' ? $sourceQuery : 'n/a',
+                'suggested_value' => $suggestedValue !== '' ? $suggestedValue : 'No suggested value available.',
+                'can_apply' => $status === 'pending',
+                'can_restore' => $status === 'applied' && array_key_exists('previous_value', $draft),
+                'submission_id' => $submissionId,
+            ];
         }
 
-        $notice = match (true) {
-            str_contains($_SERVER['REQUEST_URI'] ?? '', 'updated=research-draft') => '<div class="edit-notice">Research draft created.</div>',
-            str_contains($_SERVER['REQUEST_URI'] ?? '', 'updated=research-draft-existing') => '<div class="edit-notice">An active draft already exists for this research item and target field.</div>',
-            str_contains($_SERVER['REQUEST_URI'] ?? '', 'updated=research-applied') => '<div class="edit-notice">Research draft applied to canonical data.</div>',
-            str_contains($_SERVER['REQUEST_URI'] ?? '', 'updated=research-rejected') => '<div class="edit-notice">Research draft rejected.</div>',
-            str_contains($_SERVER['REQUEST_URI'] ?? '', 'updated=research-restored') => '<div class="edit-notice">Previous canonical value restored from research draft history.</div>',
-            str_contains($_SERVER['REQUEST_URI'] ?? '', 'error=research-draft') => '<div class="edit-notice">Unable to create research draft.</div>',
-            str_contains($_SERVER['REQUEST_URI'] ?? '', 'error=research-draft-ungrounded') => '<div class="edit-notice">Only grounded local-corpus research with citations can become a draft.</div>',
-            str_contains($_SERVER['REQUEST_URI'] ?? '', 'error=research-apply') => '<div class="edit-notice">Unable to apply this draft. The source evidence no longer passes draft checks.</div>',
-            str_contains($_SERVER['REQUEST_URI'] ?? '', 'error=research-restore') => '<div class="edit-notice">Unable to restore the previous value for this draft.</div>',
-            default => '',
+        return $items;
+    }
+
+    private function researchDraftsNoticeKey(string $uri): ?string
+    {
+        return match (true) {
+            str_contains($uri, 'updated=research-draft-existing') => 'research_draft_existing',
+            str_contains($uri, 'updated=research-draft') => 'research_draft',
+            str_contains($uri, 'updated=research-applied') => 'research_applied',
+            str_contains($uri, 'updated=research-rejected') => 'research_rejected',
+            str_contains($uri, 'updated=research-restored') => 'research_restored',
+            str_contains($uri, 'error=research-draft-ungrounded') => 'error_research_ungrounded',
+            str_contains($uri, 'error=research-draft') => 'error_research_draft',
+            str_contains($uri, 'error=research-apply') => 'error_research_apply',
+            str_contains($uri, 'error=research-restore') => 'error_research_restore',
+            default => null,
         };
-
-        if ($items === []) {
-            return $notice . '<div class="annotation-empty">No pending research drafts have been created yet.</div>';
-        }
-
-        return $notice . '<div class="annotation-list">' . implode('', $items) . '</div>';
     }
 
     /**
      * @param array<string,mixed> $validationState
+     * @return list<array<string,string>>
      */
-    private function renderAppliedResearchDraftsPanel(array $validationState, string $submissionId): string
+    private function buildAppliedResearchDraftsView(array $validationState, string $submissionId): array
     {
         $drafts = is_array($validationState['research_drafts'] ?? null) ? $validationState['research_drafts'] : [];
         $items = [];
@@ -1402,34 +742,29 @@ HTML;
                 continue;
             }
 
-            $targetPath = htmlspecialchars((string) ($draft['target_path'] ?? 'draft'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $provider = htmlspecialchars((string) ($draft['source_provider'] ?? 'research'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $source = htmlspecialchars((string) ($draft['source_query'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $quality = htmlspecialchars((string) ($draft['draft_quality'] ?? 'unrated'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $appliedAt = htmlspecialchars((string) ($draft['applied_at'] ?? 'n/a'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $value = htmlspecialchars((string) ($draft['suggested_value'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $targetPathRaw = (string) ($draft['target_path'] ?? 'draft');
+            $sourceQuery = (string) ($draft['source_query'] ?? '');
+            $suggestedValue = (string) ($draft['suggested_value'] ?? '');
 
-            $items[] = sprintf(
-                '<article class="annotation"><div class="annotation-path">%s</div><div class="annotation-meta"><span>provider: %s</span><span>quality: %s</span><span>applied: %s</span><span><a href="/submissions/%s?edit_path=%s">Inspect field</a></span></div><div><strong>Research source</strong><div>%s</div></div><div class="annotation-value">%s</div></article>',
-                $targetPath,
-                $provider,
-                $quality,
-                $appliedAt,
-                htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                rawurlencode((string) ($draft['target_path'] ?? '')),
-                $source !== '' ? $source : 'n/a',
-                $value !== '' ? $value : 'No applied value stored.',
-            );
+            $items[] = [
+                'target_path' => $targetPathRaw,
+                'target_path_encoded' => rawurlencode((string) ($draft['target_path'] ?? '')),
+                'provider' => (string) ($draft['source_provider'] ?? 'research'),
+                'quality' => (string) ($draft['draft_quality'] ?? 'unrated'),
+                'applied_at' => (string) ($draft['applied_at'] ?? 'n/a'),
+                'source_query' => $sourceQuery !== '' ? $sourceQuery : 'n/a',
+                'suggested_value' => $suggestedValue !== '' ? $suggestedValue : 'No applied value stored.',
+                'submission_id' => $submissionId,
+            ];
         }
 
-        if ($items === []) {
-            return '<div class="annotation-empty">No active research-backed field updates are currently applied.</div>';
-        }
-
-        return '<div class="annotation-list">' . implode('', $items) . '</div>';
+        return $items;
     }
 
-    private function renderResearchDraftTargetOptions(string $kind): string
+    /**
+     * @return list<array{value:string,label:string,selected:bool}>
+     */
+    private function buildResearchDraftTargetOptionsView(string $kind): array
     {
         $preferred = match ($kind) {
             'costing' => 'funding_request.support_rationale',
@@ -1437,20 +772,15 @@ HTML;
             default => 'career_plan.three_year_plan',
         };
 
-        $options = $this->researchDraftTargetOptions();
-
-        $html = '';
-        foreach ($options as $value => $label) {
-            $selected = $value === $preferred ? ' selected' : '';
-            $html .= sprintf(
-                '<option value="%s"%s>%s</option>',
-                htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $selected,
-                htmlspecialchars($label . ' · ' . $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            );
+        $options = [];
+        foreach ($this->researchDraftTargetOptions() as $value => $label) {
+            $options[] = [
+                'value' => $value,
+                'label' => $label . ' · ' . $value,
+                'selected' => $value === $preferred,
+            ];
         }
-
-        return $html;
+        return $options;
     }
 
     /**
@@ -1615,37 +945,11 @@ HTML;
     }
 
     /**
-     * @param array<string, mixed> $completionState
-     */
-    private function renderAppendixChecklist(array $completionState): string
-    {
-        $appendices = is_array($completionState['appendices'] ?? null) ? $completionState['appendices'] : [];
-        $labels = [
-            'A' => 'Appendix A',
-            'B' => 'Appendix B',
-            'F' => 'Appendix F',
-            'G' => 'Appendix G',
-            'H' => 'Appendix H',
-            'M' => 'Appendix M',
-        ];
-
-        $items = [];
-        foreach ($labels as $key => $label) {
-            $complete = (bool) ($appendices[$key] ?? false);
-            $items[] = sprintf(
-                '<div class="checklist-item"><strong>%s</strong>%s</div>',
-                htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $complete ? 'Complete' : 'Needs work',
-            );
-        }
-
-        return '<div class="checklist">' . implode('', $items) . '</div>';
-    }
-
-    /**
      * @param array<string, array{comment:string,created_at:string,title:string}> $appendixNotes
+     * @param array<string, array{action_type:string,created_at:string,title:string,comment:string}> $appendixNoteActivity
+     * @return list<array{label:string,body:string,body_is_raw:bool,meta:string}>
      */
-    private function renderAppendixNotesPanel(array $appendixNotes, array $appendixNoteActivity): string
+    private function buildAppendixNotesView(array $appendixNotes, array $appendixNoteActivity): array
     {
         $labels = [
             'A' => 'Appendix A',
@@ -1670,34 +974,34 @@ HTML;
                 'comment' => '',
             ];
 
-            $body = trim((string) $note['comment']) !== ''
-                ? nl2br(htmlspecialchars((string) $note['comment'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'))
+            $commentRaw = (string) $note['comment'];
+            $body = trim($commentRaw) !== ''
+                ? nl2br(htmlspecialchars($commentRaw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'))
                 : 'No appendix-specific review note recorded.';
-            $meta = $this->renderAppendixNoteActivityMeta($note, $activity);
 
-            $items[] = sprintf(
-                '<div class="annotation"><div class="annotation-path">%s</div><div>%s</div><div class="annotation-meta"><span>%s</span></div></div>',
-                htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                $body,
-                $meta,
-            );
+            $items[] = [
+                'label' => $label,
+                'body' => $body,
+                'body_is_raw' => trim($commentRaw) !== '',
+                'meta' => $this->appendixNoteActivityMeta($note, $activity),
+            ];
         }
 
-        return '<div class="annotation-list">' . implode('', $items) . '</div>';
+        return $items;
     }
 
     /**
      * @param array{comment:string,created_at:string,title:string} $note
      * @param array{action_type:string,created_at:string,title:string,comment:string} $activity
      */
-    private function renderAppendixNoteActivityMeta(array $note, array $activity): string
+    private function appendixNoteActivityMeta(array $note, array $activity): string
     {
         if (trim((string) ($note['created_at'] ?? '')) !== '') {
-            return htmlspecialchars('Latest note saved at ' . (string) $note['created_at'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            return 'Latest note saved at ' . (string) $note['created_at'];
         }
 
         if (($activity['action_type'] ?? '') === 'appendix_note_cleared' && trim((string) ($activity['created_at'] ?? '')) !== '') {
-            return htmlspecialchars('Latest note activity: cleared at ' . (string) $activity['created_at'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            return 'Latest note activity: cleared at ' . (string) $activity['created_at'];
         }
 
         return 'No note activity yet';
@@ -1706,79 +1010,57 @@ HTML;
     /**
      * @param list<array{section_key:string,field_path:string,comment:string,action_type:string,created_at:string,title:string}> $annotations
      * @param array<string, mixed> $canonicalData
+     * @return list<array<string,string>>
      */
-    private function renderFieldReviewPanel(array $annotations, array $canonicalData, string $submissionId): string
+    private function buildFieldReviewView(array $annotations, array $canonicalData, string $submissionId): array
     {
-        if ($annotations === []) {
-            return sprintf(
-                '<div class="annotation-empty">No field-specific review notes are attached yet. <a href="/submissions/%s/review">Open the review cockpit</a> to add one.</div>',
-                htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            );
-        }
-
-        $items = '';
-
+        $items = [];
         foreach ($annotations as $annotation) {
-            $value = $this->valueAtPath($canonicalData, $annotation['field_path']);
-            $renderedValue = $this->renderAnnotationValue($value);
-            $reviewUrl = sprintf(
-                '/submissions/%s/review?section_key=%s&field_path=%s',
-                rawurlencode($submissionId),
-                rawurlencode($annotation['section_key']),
-                rawurlencode($annotation['field_path']),
-            );
-            $editUrl = sprintf(
-                '/submissions/%s?edit_path=%s',
-                rawurlencode($submissionId),
-                rawurlencode($annotation['field_path']),
-            );
-
-            $items .= sprintf(
-                '<article class="annotation"><div class="annotation-path">%s</div><div class="annotation-meta"><span>Section: %s</span><span>Type: %s</span><span>Updated: %s</span><span><a href="%s">Reply in review cockpit</a></span><span><a href="%s">Edit current value</a></span></div><div>%s</div><div class="annotation-value">%s</div></article>',
-                htmlspecialchars($annotation['field_path'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($annotation['section_key'] !== '' ? $annotation['section_key'] : 'n/a', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($annotation['action_type'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($annotation['created_at'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($reviewUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($editUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($annotation['comment'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                htmlspecialchars($renderedValue, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            );
+            $items[] = [
+                'field_path' => (string) $annotation['field_path'],
+                'section_key' => $annotation['section_key'] !== '' ? (string) $annotation['section_key'] : 'n/a',
+                'action_type' => (string) $annotation['action_type'],
+                'created_at' => (string) $annotation['created_at'],
+                'comment' => (string) $annotation['comment'],
+                'review_url' => sprintf(
+                    '/submissions/%s/review?section_key=%s&field_path=%s',
+                    rawurlencode($submissionId),
+                    rawurlencode($annotation['section_key']),
+                    rawurlencode($annotation['field_path']),
+                ),
+                'edit_url' => sprintf(
+                    '/submissions/%s?edit_path=%s',
+                    rawurlencode($submissionId),
+                    rawurlencode($annotation['field_path']),
+                ),
+                'value' => $this->renderAnnotationValue($this->valueAtPath($canonicalData, (string) $annotation['field_path'])),
+            ];
         }
-
-        return '<div class="annotation-list">' . $items . '</div>';
+        return $items;
     }
 
     /**
      * @param array<string, mixed> $canonicalData
+     * @return array<string,mixed>
      */
-    private function renderCanonicalEditPanel(
+    private function buildCanonicalEditPanelView(
         array $canonicalData,
         string $submissionId,
         string $requestedPath,
         string $requestedFormat,
-        string $notice,
-    ): string {
+        ?string $noticeKey,
+    ): array {
         $fieldPath = trim($requestedPath);
         $currentValue = $fieldPath !== '' ? $this->valueAtPath($canonicalData, $fieldPath) : null;
         $renderedValue = $fieldPath !== '' ? $this->renderAnnotationValue($currentValue) : '';
-        $selectedString = $requestedFormat === 'string' ? ' selected' : '';
-        $selectedJson = $requestedFormat === 'json' ? ' selected' : '';
-        $selectedBoolean = $requestedFormat === 'boolean' ? ' selected' : '';
-        $selectedInteger = $requestedFormat === 'integer' ? ' selected' : '';
 
-        return sprintf(
-            '<div class="edit-layout">%s<form method="post" action="/submissions/%s/canonical"><div><label for="field_path">Field Path</label><input id="field_path" name="field_path" value="%s" placeholder="business.operations.launch_timeline"></div><div><label for="value_format">Value Format</label><select id="value_format" name="value_format"><option value="string"%s>string</option><option value="json"%s>json</option><option value="boolean"%s>boolean</option><option value="integer"%s>integer</option></select></div><div><label for="field_value">Field Value</label><textarea id="field_value" name="field_value" placeholder="New canonical value">%s</textarea></div><div><button type="submit">Update Canonical Value</button></div></form><div class="edit-note"><strong>Current Resolved Value</strong><p>Use dot notation to patch canonical state directly. JSON is useful for arrays or objects; string is the default for single-value fields.</p><div class="annotation-value">%s</div></div></div>',
-            $notice,
-            htmlspecialchars($submissionId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            htmlspecialchars($fieldPath, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            $selectedString,
-            $selectedJson,
-            $selectedBoolean,
-            $selectedInteger,
-            htmlspecialchars($fieldPath !== '' ? $renderedValue : '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            htmlspecialchars($fieldPath !== '' ? $renderedValue : 'Choose a canonical path to inspect or update.', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-        );
+        return [
+            'notice' => $noticeKey,
+            'field_path' => $fieldPath,
+            'format' => $requestedFormat,
+            'rendered_value' => $renderedValue,
+            'display_value' => $fieldPath !== '' ? $renderedValue : 'Choose a canonical path to inspect or update.',
+        ];
     }
 
     /**
@@ -1819,12 +1101,12 @@ HTML;
         return $json === false ? '[unrenderable value]' : $json;
     }
 
-    private function editNoticeFromUri(string $uri): string
+    private function editNoticeKey(string $uri): ?string
     {
         return match (true) {
-            str_contains($uri, 'updated=canonical') => '<div class="edit-notice">Canonical field updated.</div>',
-            str_contains($uri, 'error=canonical') => '<div class="edit-notice">Unable to update canonical data. Check the field path and value format.</div>',
-            default => '',
+            str_contains($uri, 'updated=canonical') => 'updated',
+            str_contains($uri, 'error=canonical') => 'error',
+            default => null,
         };
     }
 

@@ -1,0 +1,500 @@
+{% extends "layouts/base.html.twig" %}
+{% block title %}{{ trans('submissions.show.page.title') }}{% endblock %}
+{% block head %}  <style>
+    :root {
+      --ink: #171411;
+      --paper: #fffdfa;
+      --sand: #f2eadf;
+      --line: #dbccb8;
+      --moss: #315845;
+      --rust: #ba5a2d;
+      --muted: #6f665c;
+      --code: #1d2431;
+      --code-ink: #ecf2fc;
+    }
+    body {
+      margin: 0;
+      font-family: Georgia, serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f8f3eb 0%, #efe5d8 100%);
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+    a { color: var(--moss); }
+    .header {
+      margin-bottom: 24px;
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      color: var(--rust);
+      font-weight: 700;
+    }
+    h1 {
+      margin: 8px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      letter-spacing: -0.04em;
+    }
+    p { color: var(--muted); line-height: 1.8; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 14px;
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .full {
+      grid-column: 1 / -1;
+    }
+    .card {
+      background: rgba(255, 253, 250, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(76, 62, 44, 0.06);
+    }
+    pre {
+      margin: 12px 0 0;
+      padding: 18px;
+      border-radius: 14px;
+      overflow: auto;
+      background: var(--code);
+      color: var(--code-ink);
+      font-size: 0.83rem;
+      line-height: 1.6;
+    }
+    .review-summary {
+      display: grid;
+      gap: 12px;
+    }
+    .review-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .review-note {
+      border-left: 4px solid var(--rust);
+      padding-left: 14px;
+      color: var(--ink);
+    }
+    .review-note strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+    .edit-layout {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .edit-layout form {
+      display: grid;
+      gap: 12px;
+    }
+    .edit-layout label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .edit-layout input,
+    .edit-layout select,
+    .edit-layout textarea,
+    .edit-layout button {
+      font: inherit;
+    }
+    .edit-layout input,
+    .edit-layout select,
+    .edit-layout textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+    .edit-layout textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+    .edit-layout button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--moss);
+      color: #fff;
+      cursor: pointer;
+    }
+    .edit-note {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      background: #fffefd;
+    }
+    .edit-notice {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(33, 102, 58, 0.18);
+      background: rgba(33, 102, 58, 0.08);
+      color: #21663a;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .annotation-list {
+      display: grid;
+      gap: 14px;
+      margin-top: 12px;
+    }
+    .annotation {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      background: #fffefd;
+    }
+    .annotation-path {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.84rem;
+      color: var(--moss);
+      margin-bottom: 8px;
+    }
+    .annotation-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .annotation-value {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #f8f2ea;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .annotation-empty {
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      background: #fffaf5;
+      color: var(--muted);
+    }
+    .readiness-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .readiness-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fffefd;
+    }
+    .readiness-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .readiness-note {
+      margin-top: 12px;
+      border-left: 4px solid var(--moss);
+      padding-left: 14px;
+      color: var(--ink);
+    }
+    .readiness-action {
+      margin-top: 14px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .readiness-action form {
+      margin: 0;
+    }
+    .readiness-action button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--moss);
+      color: #fff;
+      font: inherit;
+      cursor: pointer;
+    }
+    .readiness-action .notice {
+      margin: 0;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(33, 102, 58, 0.08);
+      border: 1px solid rgba(33, 102, 58, 0.18);
+      color: #21663a;
+      font-weight: 700;
+    }
+    .checklist {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .checklist-item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fffefd;
+    }
+    .checklist-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .confidence-list {
+      display: grid;
+      gap: 14px;
+      margin-top: 12px;
+    }
+    .confidence-item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      background: #fffefd;
+    }
+    .confidence-item.weak {
+      border-color: rgba(186, 90, 45, 0.4);
+      background: #fff8f2;
+    }
+    .confidence-item strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+    .confidence-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .risk {
+      color: var(--rust);
+      font-weight: 700;
+    }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(186, 90, 45, 0.1);
+      color: var(--rust);
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    @media (max-width: 920px) {
+      .grid { grid-template-columns: 1fr; }
+      .full { grid-column: auto; }
+      .edit-layout { grid-template-columns: 1fr; }
+      .readiness-grid { grid-template-columns: 1fr 1fr; }
+      .checklist { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+{% endblock %}
+{% block body %}  <main>
+    <div class="header">
+      <div class="eyebrow">Submission Detail</div>
+      <h1>{{ title }}</h1>
+      <p>The canonical proposal state and the raw imported HTML form snapshot are both visible here so the mapper can evolve without losing source fidelity.</p>
+      <div class="meta">
+        <span>Status: {{ status }}</span>
+        <span>Applicant: {{ applicant }}</span>
+        <span>Business: {{ business }}</span>
+      </div>
+        <p><a href="/submissions">Back to submissions</a> · <a href="/cohorts">Cohorts</a> · <a href="/submissions/{{ submission_id }}/intake">Intake</a> · <a href="/submissions/{{ submission_id }}/documents">Appendix documents</a> · <a href="/submissions/{{ submission_id }}/package">Merged package</a> · <a href="/submissions/{{ submission_id }}/package/pdf">PDF</a> · <a href="/submissions/{{ submission_id }}/exports/bundle/download">Bundle ZIP</a> · <a href="/submissions/{{ submission_id }}/exports">Exports</a> · <a href="/submissions/{{ submission_id }}/review">Review</a></p>
+    </div>
+    <div class="grid">
+      <section class="card full">
+        <div class="eyebrow">Review Summary</div>
+        <div class="review-summary"><div class="review-strip"><span>Status: {{ review.status }}</span><span>Current step: {{ review.current_step }}</span><span>Review actions: {{ review.review_count }}</span><span>Appendices reviewed: {{ review.reviewed_appendix_count }}/{{ review.reviewed_appendix_total }}</span><span>Section: {{ review.latest_section }}</span><span>Field: {{ review.latest_field }}</span><span>Updated: {{ review.latest_created_at }}</span>{% if review.revision_pill %}<span class="pill">{{ review.revision_pill }}</span>{% endif %}</div>
+{%- if review.has_note -%}
+<div class="review-note"><strong>{{ review.latest_title }}</strong><div>{{ review.latest_comment }}</div></div>
+{%- else -%}
+<div class="review-note"><strong>No review notes yet.</strong><div>Staff review activity will appear here once comments or status changes are recorded.</div></div>
+{%- endif -%}
+<p><a href="/submissions/{{ submission_id }}/review">Open full review cockpit</a></p></div>
+      </section>
+      <section class="card full">
+        <div class="eyebrow">Readiness</div>
+        <div class="readiness-grid"><div class="readiness-card"><strong>Readiness</strong>{{ readiness.label }}</div><div class="readiness-card"><strong>Status</strong>{{ readiness.status }}</div><div class="readiness-card"><strong>Current Step</strong>{{ readiness.current_step }}</div><div class="readiness-card"><strong>Risk Counts</strong>{{ readiness.unresolved_count }} unresolved · {{ readiness.weak_count }} low-confidence</div></div><div class="readiness-note">{{ readiness.note }}</div>
+{%- if readiness_action.show_form -%}
+<div class="readiness-action"><form method="post" action="/submissions/{{ submission_id }}/ready-for-review"><button type="submit">Mark Ready for Review</button></form>
+{%- if readiness_action.notice == 'moved_to_ready' -%}<div class="notice">Submission moved to ready_for_review.</div>
+{%- elseif readiness_action.notice == 'not_ready' -%}<div class="notice">Submission is not clean enough for review yet.</div>
+{%- endif -%}
+</div>
+{%- elseif readiness_action.notice == 'moved_to_ready' -%}
+<div class="readiness-action"><div class="notice">Submission moved to ready_for_review.</div></div>
+{%- elseif readiness_action.notice == 'not_ready' -%}
+<div class="readiness-action"><div class="notice">Submission is not clean enough for review yet.</div></div>
+{%- endif -%}
+      </section>
+      <section class="card full">
+        <div class="eyebrow">Package Checklist</div>
+        {% include "components/shared/appendix-checklist.html.twig" with { completion_state: completion_state } %}
+      </section>
+      <section class="card full">
+        <div class="eyebrow">Artifact Audit</div>
+        <div class="readiness-grid"><div class="readiness-card"><strong>Artifacts Ready</strong>{{ artifact_audit.ready_count }}/{{ artifact_audit.total_count }}</div><div class="readiness-card"><strong>Missing</strong>{{ artifact_audit.missing_count }}</div><div class="readiness-card"><strong>Action</strong><a href="/submissions/{{ artifact_audit.submission_id }}/exports">Open exports</a></div><div class="readiness-card"><strong>Bundle</strong><a href="/submissions/{{ artifact_audit.submission_id }}/exports/bundle/download">Download</a></div></div>
+{%- if artifact_audit.missing is empty -%}
+<div class="annotation-empty">All expected HTML, PDF, and bundle artifacts are present on disk.</div>
+{%- else -%}
+<div class="annotation-empty">Missing artifacts: {{ artifact_audit.missing|join(' · ') }}</div>
+{%- endif -%}
+<div class="checklist">
+{%- for item in artifact_audit.items -%}
+<div class="checklist-item"><strong>{{ item.label }}</strong>{{ item.ready ? 'Ready' : 'Missing' }}</div>
+{%- endfor -%}
+</div>
+      </section>
+      <section class="card full">
+        <div class="eyebrow">Recent Research</div>
+{%- if research.drafts_notice == 'research_draft' -%}<div class="edit-notice">Research draft created.</div>
+{%- elseif research.drafts_notice == 'research_draft_existing' -%}<div class="edit-notice">An active draft already exists for this research item and target field.</div>
+{%- elseif research.drafts_notice == 'research_applied' -%}<div class="edit-notice">Research draft applied to canonical data.</div>
+{%- elseif research.drafts_notice == 'research_rejected' -%}<div class="edit-notice">Research draft rejected.</div>
+{%- elseif research.drafts_notice == 'research_restored' -%}<div class="edit-notice">Previous canonical value restored from research draft history.</div>
+{%- elseif research.drafts_notice == 'error_research_draft' -%}<div class="edit-notice">Unable to create research draft.</div>
+{%- elseif research.drafts_notice == 'error_research_ungrounded' -%}<div class="edit-notice">Only grounded local-corpus research with citations can become a draft.</div>
+{%- elseif research.drafts_notice == 'error_research_apply' -%}<div class="edit-notice">Unable to apply this draft. The source evidence no longer passes draft checks.</div>
+{%- elseif research.drafts_notice == 'error_research_restore' -%}<div class="edit-notice">Unable to restore the previous value for this draft.</div>
+{%- endif -%}
+{%- if research.drafts is empty -%}
+<div class="annotation-empty">No pending research drafts have been created yet.</div>
+{%- else -%}
+<div class="annotation-list">
+{%- for draft in research.drafts -%}
+<div class="annotation"><div class="annotation-path">{{ draft.target_path }} · {{ draft.source_kind }}</div><div class="annotation-meta"><span>status: {{ draft.status }}</span><span>quality: {{ draft.quality }}</span><span>created: {{ draft.created_at }}</span></div><div><strong>Source</strong><div>{{ draft.source_query }}</div></div><div class="annotation-value">{{ draft.suggested_value }}</div>
+{%- if draft.can_apply -%}
+<div class="annotation-meta"><form method="post" action="/submissions/{{ draft.submission_id }}/research/drafts/{{ draft.id }}/apply"><button type="submit" style="padding:8px 12px; border-radius:10px; border:1px solid #dbccb8; background:#315845; color:#fff; cursor:pointer;">Apply Draft</button></form><form method="post" action="/submissions/{{ draft.submission_id }}/research/drafts/{{ draft.id }}/reject"><button type="submit" style="padding:8px 12px; border-radius:10px; border:1px solid #dbccb8; background:#ba5a2d; color:#fff; cursor:pointer;">Reject Draft</button></form><a href="/submissions/{{ draft.submission_id }}?edit_path={{ draft.target_path_encoded }}">Inspect target field</a></div>
+{%- elseif draft.can_restore -%}
+<div class="annotation-meta"><form method="post" action="/submissions/{{ draft.submission_id }}/research/drafts/{{ draft.id }}/restore"><button type="submit" style="padding:8px 12px; border-radius:10px; border:1px solid #dbccb8; background:#83613d; color:#fff; cursor:pointer;">Restore Previous Value</button></form><a href="/submissions/{{ draft.submission_id }}?edit_path={{ draft.target_path_encoded }}">Inspect target field</a></div>
+{%- endif -%}
+</div>
+{%- endfor -%}
+</div>
+{%- endif -%}
+{%- if research.items is empty -%}
+<div class="annotation-empty">No recent research artifacts are attached to this submission.</div>
+{%- else -%}
+<div class="annotation-list">
+{%- for item in research.items -%}
+<div class="annotation"><div class="annotation-path">{{ item.kind }}{% if item.query != '' %} · {{ item.query }}{% endif %}</div><div class="annotation-meta"><span>provider: {{ item.provider }}</span><span>quality: {{ item.quality_label }}</span></div><div>{{ item.summary }}</div>
+{%- if item.citations is not empty -%}
+<div class="annotation-value">
+{%- for citation in item.citations -%}
+{%- if citation.is_internal -%}
+<div><strong>{{ citation.title }}</strong><div><code>{{ citation.url }}</code></div></div>
+{%- else -%}
+<div><a href="{{ citation.url }}" target="_blank" rel="noreferrer">{{ citation.title }}</a></div>
+{%- endif -%}
+{%- endfor -%}
+</div>
+{%- endif -%}
+{%- if item.draftable -%}
+<form method="post" action="/submissions/{{ item.submission_id }}/research/draft" style="margin-top: 12px; display: grid; gap: 10px;"><input type="hidden" name="research_index" value="{{ item.index }}"><div><label for="target_path_{{ item.index }}" style="display:block; margin-bottom:6px; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:#6f665c;">Create Draft For</label><select id="target_path_{{ item.index }}" name="target_path" style="width:100%; padding:10px 12px; border:1px solid #dbccb8; border-radius:10px; background:#fff; color:#171411;">
+{%- for option in item.target_options -%}
+<option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>
+{%- endfor -%}
+</select></div><div><button type="submit" style="padding:10px 14px; border-radius:10px; border:1px solid #dbccb8; background:#315845; color:#fff; cursor:pointer;">Create Draft Proposal</button></div></form>
+{%- elseif item.lock_reason != '' -%}
+<div class="annotation-value" style="margin-top:12px;"><strong>Draft locked</strong><div>{{ item.lock_reason }}</div></div>
+{%- endif -%}
+</div>
+{%- endfor -%}
+</div>
+{%- endif -%}
+      </section>
+      <section class="card full">
+        <div class="eyebrow">Research-Backed Field Updates</div>
+{%- if research_backed is empty -%}
+<div class="annotation-empty">No active research-backed field updates are currently applied.</div>
+{%- else -%}
+<div class="annotation-list">
+{%- for item in research_backed -%}
+<article class="annotation"><div class="annotation-path">{{ item.target_path }}</div><div class="annotation-meta"><span>provider: {{ item.provider }}</span><span>quality: {{ item.quality }}</span><span>applied: {{ item.applied_at }}</span><span><a href="/submissions/{{ item.submission_id }}?edit_path={{ item.target_path_encoded }}">Inspect field</a></span></div><div><strong>Research source</strong><div>{{ item.source_query }}</div></div><div class="annotation-value">{{ item.suggested_value }}</div></article>
+{%- endfor -%}
+</div>
+{%- endif -%}
+      </section>
+      <section class="card full">
+        <div class="eyebrow">Appendix Review Notes</div>
+        <div class="annotation-list">
+{%- for note in appendix_notes -%}
+<div class="annotation"><div class="annotation-path">{{ note.label }}</div><div>{% if note.body_is_raw %}{{ note.body|raw }}{% else %}{{ note.body }}{% endif %}</div><div class="annotation-meta"><span>{{ note.meta }}</span></div></div>
+{%- endfor -%}
+</div>
+      </section>
+      <section class="card full">
+        <div class="eyebrow">Field Confidence</div>
+{%- if confidence_items is empty -%}
+<div class="annotation-empty">No intake confidence metadata recorded yet. New intake turns will appear here with confidence and follow-up notes.</div>
+{%- else -%}
+<div class="confidence-list">
+{%- for item in confidence_items -%}
+<article class="confidence-item{% if not item.resolved %} weak{% endif %}"><strong>{{ item.path }}</strong><div class="confidence-meta"><span>confidence {{ item.confidence }}</span><span{% if not item.resolved %} class="risk"{% endif %}>{{ item.state_label }}</span><span>{{ item.updated_at }}</span></div><div>{{ item.note }}</div><div class="annotation-value">{{ item.value }}</div></article>
+{%- endfor -%}
+</div>
+{%- endif -%}
+      </section>
+      <section class="card full">
+        <div class="eyebrow">Canonical Edit</div>
+        <div class="edit-layout">
+{%- if edit_panel.notice == 'updated' -%}<div class="edit-notice">Canonical field updated.</div>
+{%- elseif edit_panel.notice == 'error' -%}<div class="edit-notice">Unable to update canonical data. Check the field path and value format.</div>
+{%- endif -%}
+<form method="post" action="/submissions/{{ submission_id }}/canonical"><div><label for="field_path">Field Path</label><input id="field_path" name="field_path" value="{{ edit_panel.field_path }}" placeholder="business.operations.launch_timeline"></div><div><label for="value_format">Value Format</label><select id="value_format" name="value_format"><option value="string"{% if edit_panel.format == 'string' %} selected{% endif %}>string</option><option value="json"{% if edit_panel.format == 'json' %} selected{% endif %}>json</option><option value="boolean"{% if edit_panel.format == 'boolean' %} selected{% endif %}>boolean</option><option value="integer"{% if edit_panel.format == 'integer' %} selected{% endif %}>integer</option></select></div><div><label for="field_value">Field Value</label><textarea id="field_value" name="field_value" placeholder="New canonical value">{{ edit_panel.field_path != '' ? edit_panel.rendered_value : '' }}</textarea></div><div><button type="submit">Update Canonical Value</button></div></form><div class="edit-note"><strong>Current Resolved Value</strong><p>Use dot notation to patch canonical state directly. JSON is useful for arrays or objects; string is the default for single-value fields.</p><div class="annotation-value">{{ edit_panel.display_value }}</div></div></div>
+      </section>
+      <section class="card full">
+        <div class="eyebrow">Field Review Notes</div>
+{%- if field_review is empty -%}
+<div class="annotation-empty">No field-specific review notes are attached yet. <a href="/submissions/{{ submission_id }}/review">Open the review cockpit</a> to add one.</div>
+{%- else -%}
+<div class="annotation-list">
+{%- for annotation in field_review -%}
+<article class="annotation"><div class="annotation-path">{{ annotation.field_path }}</div><div class="annotation-meta"><span>Section: {{ annotation.section_key }}</span><span>Type: {{ annotation.action_type }}</span><span>Updated: {{ annotation.created_at }}</span><span><a href="{{ annotation.review_url }}">Reply in review cockpit</a></span><span><a href="{{ annotation.edit_url }}">Edit current value</a></span></div><div>{{ annotation.comment }}</div><div class="annotation-value">{{ annotation.value }}</div></article>
+{%- endfor -%}
+</div>
+{%- endif -%}
+      </section>
+      <section class="card">
+        <div class="eyebrow">Canonical Data</div>
+        <pre>{{ canonical_json }}</pre>
+      </section>
+      <section class="card">
+        <div class="eyebrow">Imported Form Snapshot</div>
+        <pre>{{ source_json }}</pre>
+      </section>
+    </div>
+  </main>
+{% endblock %}
